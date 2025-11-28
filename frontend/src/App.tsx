@@ -102,13 +102,11 @@ export default function App() {
     }
   }, [isAuthenticated, isLoading, user, createUser]);
 
-  // Loader con fondo animado
   if (isLoading) {
     return (
       <div
         style={{ position: "fixed", inset: 0, width: "100%", height: "100vh" }}
       >
-        {/* Fondo PixelBlast */}
         <div
           style={{
             position: "absolute",
@@ -142,7 +140,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Contenido del loader */}
         <div
           style={{
             position: "relative",
@@ -207,16 +204,14 @@ export default function App() {
       </div>
 
       <div style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
-        <header className="sticky top-0 z-50 bg-slate-50 border-b border-slate-200 shadow-sm w-full px-6 py-4">
+        <header className="sticky top-0 z-50 w-full px-6 py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
           <div className="w-full sm:max-w-7xl sm:mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-5">
             <div className="flex items-center justify-between mb-2 sm:mb-0">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg text-sm sm:text-base">
                   📋
                 </div>
-                <h1 className="text-lg sm:text-2xl font-bold text-black">
-                  TaskFlow
-                </h1>
+                <h1 className="text-white font-bold text-xl">TaskFlow</h1>
               </div>
 
               <div className="flex-shrink-0">
@@ -234,7 +229,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ">
           {isLoadingTasks ? (
             <div className="flex items-center justify-center py-20">
@@ -254,16 +248,15 @@ export default function App() {
           )}
         </main>
 
-        {/* Footer */}
         <footer
           className="
-  fixed bottom-0 left-0 w-full
-  py-4
-  text-center text-sm
-  border-t border-gray-200/50
-  backdrop-blur-sm bg-white/20
-  z-50
-"
+          fixed bottom-0 left-0 w-full
+          py-4
+          text-center text-sm
+          border-t border-gray-200/50
+          backdrop-blur-sm bg-white/20
+          z-50
+        "
         >
           <p className="flex items-center justify-center gap-1">
             Created with <span className="text-pink-500 animate-pulse">♥</span>{" "}
@@ -273,14 +266,14 @@ export default function App() {
               target="_blank"
               rel="noopener noreferrer"
               className="
-        font-semibold
-        text-pink-500
-        no-underline
-        visited:text-pink-500
-        transition
-        hover:text-pink-400
-        hover:drop-shadow-[0_0_8px_#ec4899]
-      "
+              font-semibold
+              text-pink-500
+              no-underline
+              visited:text-pink-500
+              transition
+              hover:text-pink-400
+              hover:drop-shadow-[0_0_8px_#ec4899]
+               "
             >
               Clorostica
             </a>

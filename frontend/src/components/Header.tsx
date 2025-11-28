@@ -8,7 +8,7 @@ const Header = () => {
   const { user, isAuthenticated } = useAuth0<AuthUser>();
 
   return (
-    <header className="flex justify-end items-center p-4 gap-3">
+    <div className="flex justify-end items-center gap-2 sm:gap-3">
       {isAuthenticated ? (
         <>
           <Logout />
@@ -16,14 +16,14 @@ const Header = () => {
             <img
               src={user.picture}
               alt={user.name}
-              className="rounded-full w-10 h-10"
+              className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
             />
           )}
         </>
       ) : (
         <Login />
       )}
-    </header>
+    </div>
   );
 };
 

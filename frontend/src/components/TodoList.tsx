@@ -1,8 +1,10 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Task } from "@/types/tasks/task.types";
+import { Lock, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
+import type { Event } from "@/types/tasks/task.types";
 import MagicBento from "./MagicBento";
-import { getTasks, saveTasks } from "../utils/storage";
+import { getEvents, saveEvents } from "../utils/storage";
+import { convertFileToBase64, compressImage } from "../utils/imageHandler";
 
 const API_URL = import.meta.env.VITE_API as string;
 
@@ -18,91 +20,147 @@ const COLOR_CLASSES = [
 ] as const;
 
 interface TodoListProps {
-  todos: Task[];
-  setTodos: React.Dispatch<React.SetStateAction<Task[]>>;
+  todos: Event[];
+  setTodos: React.Dispatch<React.SetStateAction<Event[]>>;
   search: string;
+  filter: "all" | "planned" | "upcoming" | "happened" | "liked";
   token: string | null;
   isAuthenticated: boolean;
+  isProfilePrivate?: boolean;
+  isFollowing?: boolean;
+  onFollowClick?: () => void;
+  profileOwnerName?: string;
+  isOwnProfile?: boolean;
 }
 
-type TaskStatus = "todo" | "progress" | "completed";
+type EventStatus = "planned" | "upcoming" | "happened";
 
 const getRandomColorClass = (): string => {
   const index = Math.floor(Math.random() * COLOR_CLASSES.length);
   return COLOR_CLASSES[index] || COLOR_CLASSES[0];
 };
 
-const filterTasksBySearch = (tasks: Task[], searchTerm: string): Task[] => {
-  if (!searchTerm) return tasks;
+const filterEventsBySearch = (events: Event[], searchTerm: string): Event[] => {
+  if (!searchTerm) return events;
   const lowerSearch = searchTerm.toLowerCase();
-  return tasks.filter((task) =>
-    (task.text || "").toLowerCase().includes(lowerSearch)
-  );
+  return events.filter((event) => {
+    const title = (event.title || "").toLowerCase();
+    const text = (event.text || "").toLowerCase();
+    return title.includes(lowerSearch) || text.includes(lowerSearch);
+  });
 };
 
-const useTaskOperations = (
-  todos: Task[],
-  setTodos: React.Dispatch<React.SetStateAction<Task[]>>,
+const filterEventsByStatus = (
+  events: Event[],
+  statusFilter: "all" | "planned" | "upcoming" | "happened" | "liked"
+): Event[] => {
+  if (statusFilter === "all") return events;
+  if (statusFilter === "liked") {
+    return events.filter((event) => event.liked === true);
+  }
+  return events.filter((event) => event.status === statusFilter);
+};
+
+// Helper function to normalize event data for storage
+const normalizeEventForStorage = (event: Event): Event => {
+  return {
+    id: event.id,
+    status: event.status,
+    colorClass: event.colorClass,
+    title: event.title && event.title.trim() ? event.title.trim() : null,
+    text: event.text && event.text.trim() ? event.text.trim() : null,
+    dueDate:
+      event.dueDate && event.dueDate.trim() ? event.dueDate.trim() : null,
+    startTime:
+      event.startTime && event.startTime.trim() ? event.startTime.trim() : null,
+    address:
+      event.address && event.address.trim() ? event.address.trim() : null,
+    images: Array.isArray(event.images) ? event.images : [],
+    liked: Boolean(event.liked),
+  };
+};
+
+const useEventOperations = (
+  todos: Event[],
+  setTodos: React.Dispatch<React.SetStateAction<Event[]>>,
   token: string | null,
   isAuthenticated: boolean
 ) => {
   const handleError = useCallback((operation: string, error: unknown) => {
-    console.error(`Error ${operation} task:`, error);
-    alert(`Oops! Something went wrong ${operation} your task 😕`);
+    console.error(`Error ${operation} event:`, error);
+    alert(`Oops! Something went wrong ${operation} your event 😕`);
   }, []);
 
-  const addTask = useCallback(
-    async (status: TaskStatus = "todo") => {
-      const newTask: Task = {
+  const addEvent = useCallback(
+    async (status: EventStatus = "planned", images?: string[]) => {
+      const newEvent: Event = {
         id: uuidv4(),
         status,
         text: "",
+        title: null,
+        address: null,
+        dueDate: null,
+        startTime: null,
         colorClass: getRandomColorClass(),
+        images: images || [],
+        liked: false,
       };
 
-      setTodos((prev) => [...prev, newTask]);
+      setTodos((prev) => [...prev, newEvent]);
 
       if (!isAuthenticated) {
-        const existingTasks = getTasks();
-        saveTasks([...existingTasks, newTask]);
+        const existingEvents = getEvents();
+        const eventForStorage = normalizeEventForStorage(newEvent);
+        saveEvents([...existingEvents, eventForStorage]);
         return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/tasks`, {
+        if (!token) {
+          throw new Error("No authentication token available");
+        }
+
+        const eventData = {
+          id: newEvent.id,
+          status: newEvent.status,
+          text: newEvent.text || null,
+          colorClass: newEvent.colorClass || null,
+        };
+
+        const response = await fetch(`${API_URL}/events`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(newTask),
+          body: JSON.stringify(eventData),
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
       } catch (error) {
-        setTodos((prev) => prev.filter((task) => task.id !== newTask.id));
+        setTodos((prev) => prev.filter((event) => event.id !== newEvent.id));
         handleError("creating", error);
       }
     },
     [isAuthenticated, token, setTodos, handleError]
   );
 
-  const deleteTask = useCallback(
-    async (taskId: string) => {
+  const deleteEvent = useCallback(
+    async (eventId: string) => {
       const previousTodos = todos;
-      setTodos((prev) => prev.filter((task) => task.id !== taskId));
+      setTodos((prev) => prev.filter((event) => event.id !== eventId));
 
       if (!isAuthenticated) {
-        const tasks = getTasks();
-        const updatedTasks = tasks.filter((task) => task.id !== taskId);
-        saveTasks(updatedTasks);
+        const events = getEvents();
+        const updatedEvents = events.filter((event) => event.id !== eventId);
+        saveEvents(updatedEvents);
         return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        const response = await fetch(`${API_URL}/events/${eventId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -120,35 +178,74 @@ const useTaskOperations = (
     [todos, isAuthenticated, token, setTodos, handleError]
   );
 
-  const editTask = useCallback(
-    async (id: string, newText: string) => {
-      const task = todos.find((t) => t.id === id);
-      if (!task) return;
+  const editEvent = useCallback(
+    async (
+      id: string,
+      title: string,
+      text: string,
+      dueDate?: string | null,
+      startTime?: string | null,
+      images?: string[],
+      address?: string | null
+    ) => {
+      const event = todos.find((e) => e.id === id);
+      if (!event) return;
 
-      const updatedTask = { ...task, text: newText };
+      // Build updatedEvent ensuring all fields are properly set
+      const updatedEvent: Event = {
+        ...event,
+        title: title !== undefined ? title.trim() || null : event.title,
+        text: text !== undefined ? text.trim() || null : event.text,
+        dueDate:
+          dueDate !== undefined ? dueDate?.trim() || null : event.dueDate,
+        startTime:
+          startTime !== undefined ? startTime?.trim() || null : event.startTime,
+        address:
+          address !== undefined ? address?.trim() || null : event.address,
+        images: images !== undefined ? images : event.images || [],
+        liked: event.liked || false,
+      };
+
       const previousTodos = todos;
-
-      setTodos((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
+      setTodos((prev) => prev.map((e) => (e.id === id ? updatedEvent : e)));
 
       if (!isAuthenticated) {
-        const localTasks = getTasks();
-        const updatedTasks = localTasks.map((t) =>
-          t.id === id ? updatedTask : t
+        // Normalize and save to localStorage
+        const eventForStorage = normalizeEventForStorage(updatedEvent);
+        const localEvents = getEvents();
+        const updatedEvents = localEvents.map((e) =>
+          e.id === id ? eventForStorage : e
         );
-        saveTasks(updatedTasks);
+        saveEvents(updatedEvents);
+
+        console.log("✅ Event saved to localStorage:", {
+          id: eventForStorage.id,
+          title: eventForStorage.title,
+          text: eventForStorage.text,
+          dueDate: eventForStorage.dueDate,
+          startTime: eventForStorage.startTime,
+          address: eventForStorage.address,
+        });
+
         return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/tasks/${id}`, {
+        const response = await fetch(`${API_URL}/events/${id}`, {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text: newText,
-            status: task.status,
+            title: updatedEvent.title,
+            text: updatedEvent.text,
+            status: event.status,
+            dueDate: updatedEvent.dueDate,
+            startTime: updatedEvent.startTime,
+            images: updatedEvent.images,
+            address: updatedEvent.address,
+            liked: updatedEvent.liked,
           }),
         });
 
@@ -163,50 +260,54 @@ const useTaskOperations = (
     [todos, isAuthenticated, token, setTodos, handleError]
   );
 
-  const changeTaskStatus = useCallback(
+  const changeEventStatus = useCallback(
     async (
-      taskId: string,
-      newStatus: TaskStatus,
+      eventId: string,
+      newStatus: EventStatus,
       position: number | null = null
     ) => {
-      const task = todos.find((t) => t.id === taskId);
-      if (!task) {
-        console.error("Task not found:", taskId);
-        return;
-      }
+      const event = todos.find((e) => e.id === eventId);
+      if (!event) return;
 
-      const updatedTask = { ...task, status: newStatus };
+      const updatedEvent = { ...event, status: newStatus };
       const previousTodos = todos;
 
-      setTodos((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+      setTodos((prev) =>
+        prev.map((e) => (e.id === eventId ? updatedEvent : e))
+      );
 
       if (!isAuthenticated) {
-        const localTasks = getTasks();
-        const updatedTasks = localTasks.map((t) =>
-          t.id === taskId ? updatedTask : t
+        const eventForStorage = normalizeEventForStorage(updatedEvent);
+        const localEvents = getEvents();
+        const updatedEvents = localEvents.map((e) =>
+          e.id === eventId ? eventForStorage : e
         );
-        saveTasks(updatedTasks);
+        saveEvents(updatedEvents);
         return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        const response = await fetch(`${API_URL}/events/${eventId}`, {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text: task.text,
+            text: event.text,
             status: newStatus,
+            dueDate: event.dueDate,
+            startTime: event.startTime,
+            address: event.address,
+            title: event.title,
+            images: event.images,
+            liked: event.liked,
           }),
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        console.log("✅ Task status updated:", updatedTask);
       } catch (error) {
         setTodos(previousTodos);
         handleError("updating", error);
@@ -215,54 +316,342 @@ const useTaskOperations = (
     [todos, isAuthenticated, token, setTodos, handleError]
   );
 
+  const reorderEvents = useCallback(
+    (draggedEventId: string, targetEventId: string) => {
+      const draggedEvent = todos.find((e) => e.id === draggedEventId);
+      const targetEvent = todos.find((e) => e.id === targetEventId);
+
+      if (!draggedEvent || !targetEvent || draggedEventId === targetEventId)
+        return;
+
+      const previousTodos = todos;
+      const draggedIndex = todos.findIndex((e) => e.id === draggedEventId);
+      const targetIndex = todos.findIndex((e) => e.id === targetEventId);
+
+      if (draggedIndex === -1 || targetIndex === -1) return;
+
+      const newEvents = [...todos];
+      newEvents.splice(draggedIndex, 1);
+      newEvents.splice(targetIndex, 0, draggedEvent);
+
+      setTodos(newEvents);
+
+      if (!isAuthenticated) {
+        const normalizedEvents = newEvents.map(normalizeEventForStorage);
+        saveEvents(normalizedEvents);
+      }
+    },
+    [todos, isAuthenticated, setTodos]
+  );
+
+  const toggleLike = useCallback(
+    async (eventId: string, liked: boolean) => {
+      const event = todos.find((e) => e.id === eventId);
+      if (!event) return;
+
+      const updatedEvent: Event = {
+        ...event,
+        liked,
+      };
+
+      const previousTodos = todos;
+
+      setTodos((prev) =>
+        prev.map((e) => (e.id === eventId ? updatedEvent : e))
+      );
+
+      if (!isAuthenticated) {
+        const eventForStorage = normalizeEventForStorage(updatedEvent);
+        const localEvents = getEvents();
+        const updatedEvents = localEvents.map((e) =>
+          e.id === eventId ? eventForStorage : e
+        );
+        saveEvents(updatedEvents);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/events/${eventId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: event.title,
+            text: event.text,
+            status: event.status,
+            dueDate: event.dueDate,
+            startTime: event.startTime,
+            address: event.address,
+            images: event.images,
+            liked: liked,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        setTodos(previousTodos);
+        handleError("toggling like", error);
+      }
+    },
+    [todos, isAuthenticated, token, setTodos, handleError]
+  );
+
   return {
-    addTask,
-    deleteTask,
-    editTask,
-    changeTaskStatus,
+    addEvent,
+    deleteEvent,
+    editEvent,
+    changeEventStatus,
+    reorderEvents,
+    toggleLike,
   };
+};
+
+const PrivateProfileOverlay = ({
+  isFollowing,
+  onFollowClick,
+  profileOwnerName,
+}: {
+  isFollowing: boolean;
+  onFollowClick: () => void;
+  profileOwnerName: string;
+}) => {
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10" />
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-purple-500/20 rounded-full animate-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${5 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 max-w-md mx-4 animate-in zoom-in-95 duration-500">
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-purple-200/50 overflow-hidden">
+          <div className="h-32 bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00em0wLTEwYzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHptMC0xMGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+            <Sparkles
+              className="absolute top-6 right-6 text-white/80 animate-pulse"
+              size={28}
+            />
+          </div>
+
+          <div className="flex justify-center -mt-16 mb-4">
+            <div className="w-28 h-28 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center shadow-xl border-4 border-white">
+              <Lock className="text-white" size={48} strokeWidth={2.5} />
+            </div>
+          </div>
+
+          <div className="px-8 pb-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Private Profile
+            </h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              {profileOwnerName
+                ? `${profileOwnerName}'s tasks are private. Follow to see their content.`
+                : "This user's tasks are private. Follow to see their content."}
+            </p>
+
+            <button
+              onClick={onFollowClick}
+              disabled={isFollowing}
+              className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg ${
+                isFollowing
+                  ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 hover:shadow-xl hover:shadow-purple-500/50"
+              }`}
+            >
+              {isFollowing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Eye size={20} />
+                  Following
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <UserPlus size={20} />
+                  Follow to View
+                </span>
+              )}
+            </button>
+
+            <p className="text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
+              <EyeOff size={14} />
+              Content is hidden until you follow
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default function TodoList({
   todos,
   setTodos,
   search,
+  filter,
   token,
   isAuthenticated,
+  isProfilePrivate = false,
+  isFollowing = false,
+  onFollowClick,
+  profileOwnerName,
+  isOwnProfile = true,
 }: TodoListProps) {
-  const { addTask, deleteTask, editTask, changeTaskStatus } = useTaskOperations(
-    todos,
-    setTodos,
-    token,
-    isAuthenticated
+  const {
+    addEvent,
+    deleteEvent,
+    editEvent,
+    changeEventStatus,
+    reorderEvents,
+    toggleLike,
+  } = useEventOperations(todos, setTodos, token, isAuthenticated);
+
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const filteredTodos = useMemo(() => {
+    const statusFiltered = filterEventsByStatus(todos, filter);
+    return filterEventsBySearch(statusFiltered, search);
+  }, [todos, filter, search]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes("Files")) {
+      e.dataTransfer.dropEffect = "copy";
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      const files = Array.from(e.dataTransfer.files).filter((file) =>
+        file.type.startsWith("image/")
+      );
+
+      if (files.length === 0) return;
+
+      try {
+        const imagePromises = files.map(async (file) => {
+          const compressedFile = await compressImage(file);
+          return await convertFileToBase64(compressedFile);
+        });
+
+        const images = await Promise.all(imagePromises);
+        await addEvent("planned", images);
+      } catch (error) {
+        console.error("Error creating event from dropped images:", error);
+        alert("Error creating event from images. Please try again.");
+      }
+    },
+    [addEvent]
   );
 
-  const filteredTodos = useMemo(
-    () => filterTasksBySearch(todos, search),
-    [todos, search]
-  );
+  const shouldShowPrivateOverlay =
+    isProfilePrivate && !isOwnProfile && !isFollowing;
 
   return (
-    <div className="w-full">
-      <MagicBento
-        textAutoHide
-        enableStars
-        enableSpotlight
-        enableBorderGlow
-        enableTilt
-        enableMagnetism
-        clickEffect
-        spotlightRadius={300}
-        particleCount={12}
-        glowColor="132, 0, 255"
-        tasks={filteredTodos}
-        onEdit={editTask}
-        onDelete={deleteTask}
-        onStatusChange={(id, newStatus) =>
-          changeTaskStatus(id, newStatus as TaskStatus)
+    <div
+      className="w-full relative"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragOver && (
+        <div className="absolute inset-0 z-50 bg-purple-500/20 backdrop-blur-sm border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center pointer-events-none">
+          <div className="text-center text-white">
+            <div className="text-6xl mb-4">📷</div>
+            <div className="text-2xl font-bold">
+              Drop images here to create a new event
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={
+          shouldShowPrivateOverlay
+            ? "blur-xl select-none pointer-events-none"
+            : ""
         }
-        addTask={(status) => addTask(status as TaskStatus)}
-      />
+      >
+        <MagicBento
+          textAutoHide
+          enableStars
+          enableSpotlight
+          enableBorderGlow
+          enableTilt
+          enableMagnetism
+          clickEffect
+          spotlightRadius={300}
+          particleCount={12}
+          glowColor="132, 0, 255"
+          tasks={filteredTodos}
+          onEdit={(id, title, text, dueDate, startTime, images, address) =>
+            editEvent(id, title, text, dueDate, startTime, images, address)
+          }
+          onDelete={deleteEvent}
+          onStatusChange={(id, newStatus) =>
+            changeEventStatus(id, newStatus as EventStatus)
+          }
+          onReorder={reorderEvents}
+          onLikeToggle={toggleLike}
+          addTask={(status) => addEvent(status as EventStatus)}
+          currentFilter={filter}
+        />
+      </div>
+
+      {shouldShowPrivateOverlay && onFollowClick && (
+        <PrivateProfileOverlay
+          isFollowing={isFollowing}
+          onFollowClick={onFollowClick}
+          profileOwnerName={profileOwnerName || "This user"}
+        />
+      )}
+
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+          }
+          25% {
+            transform: translateY(-20px) translateX(10px);
+          }
+          50% {
+            transform: translateY(-10px) translateX(-10px);
+          }
+          75% {
+            transform: translateY(-15px) translateX(5px);
+          }
+        }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

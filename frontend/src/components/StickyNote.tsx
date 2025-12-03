@@ -91,7 +91,7 @@ const StickyNote = forwardRef<HTMLDivElement, StickyNoteProps>(
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           onDragStart={(e) => e.stopPropagation()}
-          placeholder="Write your task..."
+          placeholder="Write your event..."
           className="w-full bg-transparent resize-none focus:outline-none text-gray-800 font-medium mt-6 sm:mt-8 relative z-10 text-sm sm:text-base"
           rows={2}
         />
@@ -106,91 +106,54 @@ const StickyNote = forwardRef<HTMLDivElement, StickyNoteProps>(
           }}
           transition={{ duration: 0.2, delay: isHovered ? 0.1 : 0 }}
         >
-          {status !== "todo" && (
+          {status !== "planned" && (
             <motion.button
-              onClick={handleButtonClick(() => onStatusChange(id, "todo"))}
+              onClick={handleButtonClick(() => onStatusChange(id, "planned"))}
               whileHover={{ scale: 1.1, rotate: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
+              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
             >
               <span className="relative z-10 flex items-center gap-1">
-                <svg
-                  className="w-2 sm:w-3 h-2 sm:h-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="hidden sm:inline">To Do</span>
+                <span>💡</span>
+                <span className="hidden sm:inline">Idea</span>
               </span>
             </motion.button>
           )}
 
-          {status !== "progress" && (
+          {status !== "upcoming" && (
             <motion.button
-              onClick={handleButtonClick(() => onStatusChange(id, "progress"))}
+              onClick={handleButtonClick(() => onStatusChange(id, "upcoming"))}
               whileHover={{ scale: 1.1, rotate: 2 }}
               whileTap={{ scale: 0.95 }}
-              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
+              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
             >
               <span className="relative z-10 flex items-center gap-1">
-                {status === "todo" ? (
+                {status === "planned" ? (
                   <>
-                    <svg
-                      className="w-2 sm:w-3 h-2 sm:h-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="hidden sm:inline">Start</span>
+                    <span>📅</span>
+                    <span className="hidden sm:inline">Upcoming</span>
                   </>
                 ) : (
                   <>
-                    <svg
-                      className="w-2 sm:w-3 h-2 sm:h-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="hidden sm:inline">Progress</span>
+                    <span>📅</span>
+                    <span className="hidden sm:inline">Upcoming</span>
                   </>
                 )}
               </span>
             </motion.button>
           )}
 
-          {status !== "completed" && (
+          {status !== "happened" && (
             <motion.button
-              onClick={handleButtonClick(() => onStatusChange(id, "completed"))}
+              onClick={handleButtonClick(() => onStatusChange(id, "happened"))}
               whileHover={{ scale: 1.1, rotate: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
+              className="group/btn relative px-1 sm:px-2 py-1 bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 rounded-full text-white text-xs font-medium shadow-lg transition-all duration-200"
             >
-              <svg
-                className="w-3 sm:w-4 h-3 sm:h-4 relative z-10"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <span className="relative z-10 flex items-center gap-1">
+                <span>✨</span>
+                <span className="hidden sm:inline">Memory</span>
+              </span>
             </motion.button>
           )}
 

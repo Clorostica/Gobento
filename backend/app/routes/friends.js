@@ -4,73 +4,8 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET - Obtener followers y following del usuario
-router.get("/followers-following", authenticate, async (req, res) => {
-  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
-
-  try {
-    const { sub } = req.auth;
-
-    // Get followers: users who follow the current user (where current user is user_id_2)
-    const followersResult = await pool.query(
-      `SELECT DISTINCT u.id, u.email, u.name, u.picture
-       FROM friendships f
-       JOIN users u ON u.id = f.user_id_1
-       WHERE f.user_id_2 = $1 AND f.status = 'accepted'
-       ORDER BY u.email`,
-      [sub]
-    );
-
-    // Get following: users that the current user follows (where current user is user_id_1)
-    const followingResult = await pool.query(
-      `SELECT DISTINCT u.id, u.email, u.name, u.picture
-       FROM friendships f
-       JOIN users u ON u.id = f.user_id_2
-       WHERE f.user_id_1 = $1 AND f.status = 'accepted'
-       ORDER BY u.email`,
-      [sub]
-    );
-
-    res.json({
-      followers: followersResult.rows,
-      following: followingResult.rows,
-    });
-  } catch (err) {
-    console.error("Error loading followers/following:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// GET - Obtener lista de amigos del usuario
-router.get("/", authenticate, async (req, res) => {
-  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
-
-  try {
-    const { sub } = req.auth;
-
-    const result = await pool.query(
-      `SELECT u.id, u.email, u.name, u.picture
-       FROM friendships f
-       JOIN users u ON (
-         CASE 
-           WHEN f.user_id_1 = $1 THEN u.id = f.user_id_2
-           ELSE u.id = f.user_id_1
-         END
-       )
-       WHERE (f.user_id_1 = $1 OR f.user_id_2 = $1) AND f.status = 'accepted'
-       ORDER BY u.email`,
-      [sub]
-    );
-
-    res.json({ friends: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// POST - Agregar amigo (enviar solicitud)
-router.post("/", authenticate, async (req, res) => {
+// POST - Agregar amigo
+router.post("/:friendId", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
   try {
@@ -86,7 +21,9 @@ router.post("/", authenticate, async (req, res) => {
     }
 
     // Check if user exists
-    const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [friendId]);
+    const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [
+      friendId,
+    ]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -163,4 +100,3 @@ router.delete("/:friendId", authenticate, async (req, res) => {
 });
 
 export default router;
-

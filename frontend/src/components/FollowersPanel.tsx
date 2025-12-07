@@ -158,9 +158,9 @@ export default function FollowersPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col mx-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-8 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">👥 Followers</h2>
           <button
             onClick={onClose}
@@ -171,7 +171,7 @@ export default function FollowersPanel({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-shrink-0 p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
           {/* Search */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
@@ -232,7 +232,9 @@ export default function FollowersPanel({
 
           {/* Followers List */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-800">My Followers</h3>
+            <h3 className="text-lg font-semibold text-gray-800">
+              My Followers
+            </h3>
             {isLoading ? (
               <div className="text-center text-sm text-gray-500 py-4">
                 Loading followers...
@@ -264,7 +266,9 @@ export default function FollowersPanel({
                         <p className="font-medium text-gray-800">
                           {follower.name || follower.email}
                         </p>
-                        <p className="text-xs text-gray-500">{follower.email}</p>
+                        <p className="text-xs text-gray-500">
+                          {follower.email}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -283,4 +287,3 @@ export default function FollowersPanel({
     </div>
   );
 }
-

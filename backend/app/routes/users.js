@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET - Obtener usuario específico
+// GET - Obtener usuario específico (usuario actual)
 router.get("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
@@ -44,4 +44,3 @@ router.post("/", authenticate, async (req, res) => {
 });
 
 export default router;
-

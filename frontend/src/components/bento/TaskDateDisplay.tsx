@@ -8,18 +8,60 @@ interface TaskDateDisplayProps {
 const TaskDateDisplay: React.FC<TaskDateDisplayProps> = ({ task }) => {
   if (!task.dueDate || typeof task.dueDate !== "string") return null;
 
-  const isOverdue =
-    new Date(task.dueDate) < new Date() && task.status !== "happened";
+  let formattedDate = "";
+  let isOverdue = false;
+
+  try {
+    const dueDate = new Date(task.dueDate);
+
+    if (!isNaN(dueDate.getTime())) {
+      formattedDate = dueDate.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dueDate.setHours(0, 0, 0, 0);
+
+      isOverdue = dueDate < today && task.status !== "happened";
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    return null;
+  }
+
+  let displayTime = "";
+  if (task.startTime) {
+    try {
+      if (task.startTime.includes("T")) {
+        const timeDate = new Date(task.startTime);
+        if (!isNaN(timeDate.getTime())) {
+          displayTime = timeDate.toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
+      } else {
+        displayTime = task.startTime;
+      }
+    } catch (error) {
+      console.error("Error parsing time:", error);
+    }
+  }
 
   return (
     <div className="mb-2 text-sm text-white opacity-90 flex items-center gap-2 flex-wrap">
       <span className="flex items-center gap-2 font-medium">
         <span className="text-base">📅</span>
-        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-        {task.startTime && (
+        <span>{formattedDate}</span>
+        {displayTime && (
           <span className="flex items-center gap-1.5 ml-2">
             <span className="text-base">🕐</span>
-            <span>{task.startTime}</span>
+            <span>{displayTime}</span>
           </span>
         )}
       </span>

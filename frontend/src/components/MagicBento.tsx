@@ -198,11 +198,7 @@ const MagicBento: React.FC<BentoProps> = ({
     ) {
       addressValue = event.address;
     }
-    console.log("MagicBento - handleEditStart - Loading address:", {
-      eventAddress: event.address,
-      addressValue,
-      addressType: typeof event.address,
-    });
+
     setEditAddress(addressValue);
 
     setEditImages(event.images || []);
@@ -210,49 +206,38 @@ const MagicBento: React.FC<BentoProps> = ({
 
   const handleEditSave = (eventId: string) => {
     if (onEdit) {
-      // Ensure we convert empty strings to null for proper JSON serialization
-      const dueDateValue =
-        editDueDate && editDueDate.trim()
-          ? `${editDueDate.trim()}T00:00:00.000Z`
-          : null;
-      const startTimeValue =
-        editStartTime && editStartTime.trim() ? editStartTime.trim() : null;
+      // Convert empty strings a null
+      const dueDateValue = editDueDate?.trim() ? editDueDate.trim() : null;
+      const startTimeValue = editStartTime?.trim()
+        ? editStartTime.trim()
+        : null;
+      const addressValue = editAddress?.trim() ? editAddress.trim() : null;
 
-      // IMPORTANT: Always pass the address value, even if empty (convert empty string to null for storage)
-      const addressValue =
-        editAddress && editAddress.trim().length > 0
-          ? editAddress.trim()
-          : null;
-
-      console.log("MagicBento - Saving event with values:", {
+      console.log("Saving event values:", {
         eventId,
         dueDateValue,
         startTimeValue,
         addressValue,
-        editDueDate,
-        editStartTime,
-        editAddress,
-        editAddressLength: editAddress?.length,
-        editAddressType: typeof editAddress,
       });
 
       onEdit(
         eventId,
-        editTitle.trim() || "",
-        editText.trim() || "",
+        editTitle?.trim() || "",
+        editText?.trim() || "",
         dueDateValue,
         startTimeValue,
         editImages,
         addressValue
       );
+
+      setEditingId(null);
+      setEditTitle("");
+      setEditText("");
+      setEditDueDate("");
+      setEditStartTime("");
+      setEditAddress("");
+      setEditImages([]);
     }
-    setEditingId(null);
-    setEditTitle("");
-    setEditText("");
-    setEditDueDate("");
-    setEditStartTime("");
-    setEditAddress("");
-    setEditImages([]);
   };
 
   const handleEditCancel = () => {
@@ -357,8 +342,6 @@ const MagicBento: React.FC<BentoProps> = ({
         : {};
 
     const handleHeaderKeyDown = (e: React.KeyboardEvent, event: Event) => {
-      // Only handle if we're not currently editing this event
-      // This prevents interference when user is typing in title or description
       if (onEdit && editingId !== event.id && editingId === null) {
         const isTyping =
           e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -377,7 +360,6 @@ const MagicBento: React.FC<BentoProps> = ({
                 return currentTitle + e.key;
               });
               setTimeout(() => {
-                // Focus on the title textarea only (exact match, not description)
                 const titleTextarea = document.querySelector(
                   `textarea[data-task-id="${event.id}"]:not([data-task-id*="-description"])`
                 ) as HTMLTextAreaElement;
@@ -457,7 +439,6 @@ const MagicBento: React.FC<BentoProps> = ({
       onHeaderKeyDown: handleHeaderKeyDown,
     };
 
-    // Add optional props only if they exist
     if (onDelete) {
       cardContentProps.onDelete = onDelete;
     }

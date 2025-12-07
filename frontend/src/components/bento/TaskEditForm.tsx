@@ -1,5 +1,4 @@
-import React, { useRef, useEffect } from "react";
-import EmojiPicker from "../EmojiPicker";
+import React, { useRef, useEffect, useState } from "react";
 import { convertFileToBase64, compressImage } from "../../utils/imageHandler";
 
 interface TaskEditFormProps {
@@ -42,9 +41,85 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   onDelete,
 }) => {
   const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isInitialMount = useRef(true);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const emojiScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Initialize title textarea only once on mount
+  const emojis = [
+    "😊",
+    "😂",
+    "🥰",
+    "😍",
+    "🤩",
+    "😎",
+    "🤗",
+    "🙂",
+    "😌",
+    "😏",
+    "❤️",
+    "💕",
+    "💖",
+    "💗",
+    "💙",
+    "💚",
+    "💛",
+    "🧡",
+    "💜",
+    "🖤",
+    "👍",
+    "👏",
+    "🙌",
+    "👌",
+    "✌️",
+    "🤞",
+    "🤝",
+    "💪",
+    "🙏",
+    "✊",
+    "🎉",
+    "🎊",
+    "🎈",
+    "🎁",
+    "🎀",
+    "🎂",
+    "🍰",
+    "🎯",
+    "🎨",
+    "🎭",
+    "🔥",
+    "⭐",
+    "✨",
+    "💫",
+    "⚡",
+    "☀️",
+    "🌙",
+    "🌟",
+    "💥",
+    "🌈",
+    "📌",
+    "📍",
+    "📎",
+    "✏️",
+    "📝",
+    "💡",
+    "🔔",
+    "⏰",
+    "📅",
+    "📆",
+    "✅",
+    "❌",
+    "⚠️",
+    "🚀",
+    "🎯",
+    "🏆",
+    "🥇",
+    "🎖️",
+    "⚙️",
+    "🔧",
+  ];
+
   useEffect(() => {
     if (titleTextareaRef.current && isInitialMount.current) {
       isInitialMount.current = false;
@@ -58,7 +133,27 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         textarea.setSelectionRange(0, 0);
       }
     }
-  }, []); // Only run once on mount
+  }, []);
+
+  // Cerrar el picker al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -68,7 +163,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       const imagePromises = Array.from(files).map(async (file) => {
         if (!file.type.startsWith("image/")) return null;
 
-        // Don't compress GIFs to preserve animation
         if (file.type === "image/gif") {
           return await convertFileToBase64(file);
         }
@@ -95,9 +189,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    // Stop propagation to prevent any parent handlers from interfering
     e.stopPropagation();
-    // Only update the title, not the description
     onTitleChange(e.target.value);
     const textarea = e.target as HTMLTextAreaElement;
     textarea.style.height = "auto";
@@ -105,13 +197,24 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    // Stop propagation to prevent any parent handlers from interfering
     e.stopPropagation();
-    // Only update the description (text), not the title
     onTextChange(e.target.value);
-    const textarea = e.target as HTMLTextAreaElement;
+    const textarea = e.target;
     textarea.style.height = "auto";
     textarea.style.height = `${Math.max(120, textarea.scrollHeight)}px`;
+  };
+
+  const insertEmoji = (emoji: string) => {
+    if (!descriptionTextareaRef.current) return;
+    const textarea = descriptionTextareaRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = text.substring(0, start) + emoji + text.substring(end);
+    onTextChange(newText);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
   };
 
   return (
@@ -179,64 +282,115 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         />
       </div>
 
-      <textarea
-        data-task-id={`${taskId}-description`}
-        data-field="description"
-        value={text}
-        onChange={handleTextareaChange}
-        className="w-full bg-black bg-opacity-30 text-white p-3 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-        rows={4}
-        placeholder="Task description"
-        style={{ fontSize: "0.875rem", minHeight: "120px" }}
-        ref={(textarea) => {
-          if (textarea) {
-            setTimeout(() => {
-              textarea.style.height = "auto";
-              textarea.style.height = `${Math.max(
-                120,
-                textarea.scrollHeight
-              )}px`;
-            }, 50);
-          }
-        }}
-        onKeyDown={(e) => {
-          // Stop all propagation to prevent interference
-          e.stopPropagation();
-          if (e.key === "Enter" && e.ctrlKey) {
-            e.preventDefault();
-            onSave();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-          }
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        onFocus={(e) => {
-          e.stopPropagation();
-        }}
-      />
-
-      <div className="flex gap-2">
-        <EmojiPicker
-          onEmojiSelect={onEmojiSelect}
-          onGifSelect={(gifUrl: string) => {
-            onImagesChange([...images, gifUrl]);
-          }}
+      <div className="relative">
+        <textarea
+          data-task-id={`${taskId}-description`}
+          data-field="description"
+          value={text}
+          onChange={handleTextareaChange}
+          className="w-full bg-black bg-opacity-30 text-white p-3 pb-10 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+          rows={4}
+          placeholder="Task description"
+          style={{ fontSize: "0.875rem", minHeight: "120px" }}
+          ref={descriptionTextareaRef}
         />
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-          <span className="inline-flex items-center justify-center px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs font-medium transition-colors whitespace-nowrap">
-            📷 Add img
-          </span>
-        </label>
+
+        <button
+          type="button"
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className="absolute bottom-2 right-2 hover:bg-opacity-50 text-white p-2 rounded transition-all"
+          title="Add emoji"
+        >
+          😊
+        </button>
+
+        {showEmojiPicker && (
+          <div
+            ref={emojiPickerRef}
+            className="absolute bottom-12 right-0 bg-black bg-opacity-90 backdrop-blur-sm border border-purple-400 rounded-lg p-2 shadow-lg z-50"
+            style={{ width: "280px", maxHeight: "240px" }}
+          >
+            {/* Flecha arriba */}
+            <button
+              type="button"
+              onClick={() => {
+                if (emojiScrollRef.current) {
+                  emojiScrollRef.current.scrollBy({
+                    top: -60,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className="w-full flex justify-center items-center p-1 mb-1 hover:bg-purple-400 hover:bg-opacity-20 rounded transition-all"
+              title="Scroll up"
+            >
+              <svg
+                className="w-4 h-4 text-purple-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 15l7-7 7 7"
+                />
+              </svg>
+            </button>
+
+            {/* Contenedor de emojis con scroll */}
+            <div
+              ref={emojiScrollRef}
+              className="grid grid-cols-8 gap-2 overflow-y-auto max-h-44 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent"
+              style={{ scrollbarWidth: "thin" }}
+            >
+              {emojis.map((emoji, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    insertEmoji(emoji);
+                    setShowEmojiPicker(false);
+                  }}
+                  className="text-2xl hover:bg-purple-400 hover:bg-opacity-20 rounded p-1 transition-all hover:scale-110"
+                  title={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Flecha abajo */}
+            <button
+              type="button"
+              onClick={() => {
+                if (emojiScrollRef.current) {
+                  emojiScrollRef.current.scrollBy({
+                    top: 60,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className="w-full flex justify-center items-center p-1 mt-1 hover:bg-purple-400 hover:bg-opacity-20 rounded transition-all"
+              title="Scroll down"
+            >
+              <svg
+                className="w-4 h-4 text-purple-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {images.length > 0 && (
@@ -248,7 +402,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
                 <img
                   src={image}
                   alt={`Preview ${index + 1}`}
-                  className="w-full h-20 object-cover rounded border-2 border-purple-400"
+                  className="w-full h-40 object-cover rounded border-2 border-purple-400"
                 />
                 {isGif && (
                   <span className="absolute bottom-1 left-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
@@ -268,18 +422,25 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         </div>
       )}
 
+      <div className="flex gap-2">
+        <label className="cursor-pointer">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          <span className="button-primary">📷 Add img</span>
+        </label>
+      </div>
+
       <div className="flex gap-2 items-center justify-between">
         <div className="flex gap-2">
-          <button
-            onClick={onSave}
-            className="text-xs px-3 py-1 bg-purple-500 hover:bg-purple-600 rounded transition-colors text-white"
-          >
+          <button onClick={onSave} className="button-primary">
             Save
           </button>
-          <button
-            onClick={onCancel}
-            className="text-xs px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded transition-colors text-white"
-          >
+          <button onClick={onCancel} className="button-primary">
             Cancel
           </button>
         </div>
@@ -288,10 +449,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log(
-                "Delete button clicked in edit form for task:",
-                taskId
-              );
               onDelete(taskId);
             }}
             onMouseDown={(e) => {

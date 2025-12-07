@@ -24,7 +24,14 @@ const ImageModal: React.FC<ImageModalProps> = ({ imageUrl, onClose }) => {
         <img
           src={imageUrl}
           alt="Expanded view"
-          className="max-w-full max-h-[90vh] object-contain rounded"
+          className="
+          max-w-[90vw]
+          max-h-[90vh]
+          min-w-[350px]
+          min-h-[350px]
+          object-contain
+          rounded
+        "
           onClick={(e) => e.stopPropagation()}
         />
       </div>

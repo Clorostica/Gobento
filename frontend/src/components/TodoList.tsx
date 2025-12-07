@@ -26,11 +26,8 @@ interface TodoListProps {
   filter: "all" | "planned" | "upcoming" | "happened" | "liked";
   token: string | null;
   isAuthenticated: boolean;
-  isProfilePrivate?: boolean;
-  isFollowing?: boolean;
   onFollowClick?: () => void;
   profileOwnerName?: string;
-  isOwnProfile?: boolean;
 }
 
 type EventStatus = "planned" | "upcoming" | "happened";
@@ -124,7 +121,11 @@ const useEventOperations = (
           id: newEvent.id,
           status: newEvent.status,
           text: newEvent.text || null,
+          title: newEvent.title || null,
           colorClass: newEvent.colorClass || null,
+          address: newEvent.address || null,
+          dueDate: newEvent.dueDate || null,
+          startTime: newEvent.startTime || null,
         };
 
         const response = await fetch(`${API_URL}/events`, {
@@ -194,14 +195,20 @@ const useEventOperations = (
       // Build updatedEvent ensuring all fields are properly set
       const updatedEvent: Event = {
         ...event,
-        title: title !== undefined ? title.trim() || null : event.title,
-        text: text !== undefined ? text.trim() || null : event.text,
+        title: title !== undefined ? title.trim() || null : event.title ?? null,
+        text: text !== undefined ? text.trim() || null : event.text ?? null,
         dueDate:
-          dueDate !== undefined ? dueDate?.trim() || null : event.dueDate,
+          dueDate !== undefined
+            ? dueDate?.trim() || null
+            : event.dueDate ?? null,
         startTime:
-          startTime !== undefined ? startTime?.trim() || null : event.startTime,
+          startTime !== undefined
+            ? startTime?.trim() || null
+            : event.startTime ?? null,
         address:
-          address !== undefined ? address?.trim() || null : event.address,
+          address !== undefined
+            ? address?.trim() || null
+            : event.address ?? null,
         images: images !== undefined ? images : event.images || [],
         liked: event.liked || false,
       };
@@ -410,93 +417,6 @@ const useEventOperations = (
   };
 };
 
-const PrivateProfileOverlay = ({
-  isFollowing,
-  onFollowClick,
-  profileOwnerName,
-}: {
-  isFollowing: boolean;
-  onFollowClick: () => void;
-  profileOwnerName: string;
-}) => {
-  return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center">
-      <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10" />
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-purple-500/20 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${5 + Math.random() * 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 max-w-md mx-4 animate-in zoom-in-95 duration-500">
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-purple-200/50 overflow-hidden">
-          <div className="h-32 bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00em0wLTEwYzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHptMC0xMGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-            <Sparkles
-              className="absolute top-6 right-6 text-white/80 animate-pulse"
-              size={28}
-            />
-          </div>
-
-          <div className="flex justify-center -mt-16 mb-4">
-            <div className="w-28 h-28 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center shadow-xl border-4 border-white">
-              <Lock className="text-white" size={48} strokeWidth={2.5} />
-            </div>
-          </div>
-
-          <div className="px-8 pb-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Private Profile
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              {profileOwnerName
-                ? `${profileOwnerName}'s tasks are private. Follow to see their content.`
-                : "This user's tasks are private. Follow to see their content."}
-            </p>
-
-            <button
-              onClick={onFollowClick}
-              disabled={isFollowing}
-              className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg ${
-                isFollowing
-                  ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 hover:shadow-xl hover:shadow-purple-500/50"
-              }`}
-            >
-              {isFollowing ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Eye size={20} />
-                  Following
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <UserPlus size={20} />
-                  Follow to View
-                </span>
-              )}
-            </button>
-
-            <p className="text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
-              <EyeOff size={14} />
-              Content is hidden until you follow
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function TodoList({
   todos,
   setTodos,
@@ -504,11 +424,8 @@ export default function TodoList({
   filter,
   token,
   isAuthenticated,
-  isProfilePrivate = false,
-  isFollowing = false,
   onFollowClick,
   profileOwnerName,
-  isOwnProfile = true,
 }: TodoListProps) {
   const {
     addEvent,
@@ -571,9 +488,6 @@ export default function TodoList({
     [addEvent]
   );
 
-  const shouldShowPrivateOverlay =
-    isProfilePrivate && !isOwnProfile && !isFollowing;
-
   return (
     <div
       className="w-full relative"
@@ -592,13 +506,7 @@ export default function TodoList({
         </div>
       )}
 
-      <div
-        className={
-          shouldShowPrivateOverlay
-            ? "blur-xl select-none pointer-events-none"
-            : ""
-        }
-      >
+      <div>
         <MagicBento
           textAutoHide
           enableStars
@@ -624,14 +532,6 @@ export default function TodoList({
           currentFilter={filter}
         />
       </div>
-
-      {shouldShowPrivateOverlay && onFollowClick && (
-        <PrivateProfileOverlay
-          isFollowing={isFollowing}
-          onFollowClick={onFollowClick}
-          profileOwnerName={profileOwnerName || "This user"}
-        />
-      )}
 
       <style>{`
         @keyframes float {

@@ -15,10 +15,9 @@ app.get("/", (_, res) => {
 
 app.use("/", routes);
 
-// Export the app for Vercel serverless functions
 export default app;
 
-// Only start the server if not running on Vercel
+
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {

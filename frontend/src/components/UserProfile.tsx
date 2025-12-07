@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { ArrowLeft, UserPlus, UserMinus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Event } from "@/types/tasks/task.types";
 import TodoList from "./TodoList";
 import EventFilter from "./TaskFilter";
-import Search from "./Search";
 import PixelBlast from "./PixelBlast";
 import Header from "./Header";
 

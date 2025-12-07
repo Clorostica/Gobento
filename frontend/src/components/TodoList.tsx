@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Lock, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
 import type { Event } from "@/types/tasks/task.types";
 import MagicBento from "./MagicBento";
 import { getEvents, saveEvents } from "../utils/storage";
@@ -26,7 +25,6 @@ interface TodoListProps {
   filter: "all" | "planned" | "upcoming" | "happened" | "liked";
   token: string | null;
   isAuthenticated: boolean;
-  onFollowClick?: () => void;
   profileOwnerName?: string;
 }
 
@@ -424,7 +422,6 @@ export default function TodoList({
   filter,
   token,
   isAuthenticated,
-  onFollowClick,
   profileOwnerName,
 }: TodoListProps) {
   const {

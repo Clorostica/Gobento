@@ -71,6 +71,3 @@ export const checkOverdueEvents = (events: Event[]): void => {
     });
   }
 };
-
-// Keep for backward compatibility
-export const checkOverdueTasks = checkOverdueEvents;

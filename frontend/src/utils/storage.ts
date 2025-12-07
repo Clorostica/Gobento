@@ -61,6 +61,3 @@ export const saveEvents = (events: Event[]): void => {
     console.error("Error saving to localStorage:", error);
   }
 };
-
-export const getTasks = getEvents;
-export const saveTasks = saveEvents;

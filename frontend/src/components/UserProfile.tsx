@@ -15,9 +15,7 @@ interface UserProfileData {
   name?: string | null;
   picture?: string | null;
   is_private?: boolean;
-  isFollowing?: boolean;
   isMutualFriend?: boolean;
-  isOwnProfile?: boolean;
 }
 
 const API_URL = import.meta.env.VITE_API as string;
@@ -118,8 +116,6 @@ export default function UserProfile() {
       </div>
     );
   }
-
-  const isOwnProfile = user?.email === profile.email;
 
   return (
     <div style={{}}>
@@ -223,11 +219,7 @@ export default function UserProfile() {
             search={search}
             filter={filter}
             token={token}
-            // isProfilePrivate={profile.is_private || false}
-            // isFollowing={isFollowing}
-            // onFollowClick={handleFollow}
             profileOwnerName={profile.name || profile.email || "This user"}
-            isOwnProfile={isOwnProfile}
           />
         </main>
       </div>

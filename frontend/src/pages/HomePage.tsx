@@ -38,7 +38,6 @@ export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isFollowing, setIsFollowing] = useState<boolean>(false);
 
   const API_URL = import.meta.env.VITE_API as string;
 
@@ -215,7 +214,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [events]);
 
-  // Load profile and following status
+  // Load profile
   const loadProfile = useCallback(async () => {
     if (!token || !isAuthenticated || !user) return;
 
@@ -249,34 +248,6 @@ export default function HomePage() {
       loadProfile();
     }
   }, [isAuthenticated, token, user, loadProfile]);
-
-  // Handle follow/unfollow
-  const handleFollow = useCallback(async () => {
-    if (!token || !profile || !profile.id) return;
-
-    try {
-      const endpoint = isFollowing
-        ? `${API_URL}/friends/${profile.id}`
-        : `${API_URL}/friends`;
-
-      const response = await fetch(endpoint, {
-        method: isFollowing ? "DELETE" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        ...(isFollowing
-          ? {}
-          : { body: JSON.stringify({ friendId: profile.id }) }),
-      });
-
-      if (response.ok) {
-        setIsFollowing(!isFollowing);
-      }
-    } catch (error) {
-      console.error("Error toggling follow:", error);
-    }
-  }, [token, profile, isFollowing, API_URL]);
 
   if (isLoading) {
     return (
@@ -429,13 +400,9 @@ export default function HomePage() {
                 search={search}
                 filter={filter}
                 token={token}
-                isProfilePrivate={profile?.isPrivate || false}
-                isFollowing={isFollowing}
-                onFollowClick={handleFollow}
                 profileOwnerName={
                   profile?.name || profile?.email || "This user"
                 }
-                isOwnProfile={user?.email === profile?.email}
               />
             </>
           )}

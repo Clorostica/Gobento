@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import { convertFileToBase64, compressImage } from "../../utils/imageHandler";
+import { compressImage } from "../../utils/imageHandler";
+import { uploadMultipleFiles } from "../../utils/uploadthing";
 
 interface TaskEditFormProps {
   taskId: string;
@@ -46,6 +47,8 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const emojiScrollRef = useRef<HTMLDivElement | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const emojis = [
     "😊",
@@ -160,25 +163,52 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
     if (!files || files.length === 0) return;
 
     try {
-      const imagePromises = Array.from(files).map(async (file) => {
-        if (!file.type.startsWith("image/")) return null;
-
-        if (file.type === "image/gif") {
-          return await convertFileToBase64(file);
-        }
-
-        const compressedFile = await compressImage(file);
-        return await convertFileToBase64(compressedFile);
-      });
-
-      const newImages = (await Promise.all(imagePromises)).filter(
-        (img): img is string => img !== null
+      // Filter only image files
+      const imageFiles = Array.from(files).filter((file) =>
+        file.type.startsWith("image/")
       );
 
-      onImagesChange([...images, ...newImages]);
+      if (imageFiles.length === 0) {
+        alert("Please select valid image files.");
+        e.target.value = "";
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Compress images (except GIFs) before uploading
+      const processedFiles = await Promise.all(
+        imageFiles.map(async (file) => {
+          if (file.type === "image/gif") {
+            return file;
+          }
+          return await compressImage(file);
+        })
+      );
+
+      // Upload files to uploadthing with progress tracking
+      const uploadedUrls = await uploadMultipleFiles(
+        processedFiles,
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+
+      // Add the uploaded URLs to the images array
+      onImagesChange([...images, ...uploadedUrls]);
+      setUploadProgress(100);
+
+      // Reset progress after a short delay
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
     } catch (error) {
       console.error("Error uploading images:", error);
       alert("Error al subir las imágenes. Por favor intenta de nuevo.");
+      setIsUploading(false);
+      setUploadProgress(0);
     }
 
     e.target.value = "";
@@ -396,7 +426,12 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {images.map((image, index) => {
-            const isGif = image.startsWith("data:image/gif");
+            // Check if it's a URL (uploadthing) or base64 (legacy)
+            const isUrl =
+              image.startsWith("http://") || image.startsWith("https://");
+            const isGif =
+              image.includes("gif") ||
+              (isUrl && image.toLowerCase().includes(".gif"));
             return (
               <div key={index} className="relative group">
                 <img
@@ -422,7 +457,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <label className="cursor-pointer">
           <input
             type="file"
@@ -430,9 +465,32 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
             multiple
             onChange={handleImageUpload}
             className="hidden"
+            disabled={isUploading}
           />
-          <span className="button-primary">📷 Add img</span>
+          <span
+            className={`button-primary ${
+              isUploading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            📷 Add img
+          </span>
         </label>
+        {isUploading && (
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-white">Uploading...</span>
+              <span className="text-xs text-white">
+                {Math.round(uploadProgress)}%
+              </span>
+            </div>
+            <div className="w-full bg-black bg-opacity-30 rounded-full h-2">
+              <div
+                className="bg-purple-400 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 items-center justify-between">

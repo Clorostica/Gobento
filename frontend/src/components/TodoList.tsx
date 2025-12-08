@@ -105,6 +105,12 @@ const useEventOperations = (
           throw new Error("No authentication token available");
         }
 
+        // Get first image URL if images exist
+        const firstImageUrl =
+          newEvent.images && newEvent.images.length > 0
+            ? newEvent.images[0]
+            : null;
+
         const eventData = {
           id: newEvent.id,
           status: newEvent.status,
@@ -114,6 +120,7 @@ const useEventOperations = (
           address: newEvent.address || null,
           dueDate: newEvent.dueDate || null,
           startTime: newEvent.startTime || null,
+          image_url: firstImageUrl,
         };
 
         const response = await fetch(`${API_URL}/events`, {
@@ -180,6 +187,9 @@ const useEventOperations = (
       const event = todos.find((e) => e.id === id);
       if (!event) return;
 
+      // Get first image URL if images exist
+      const firstImageUrl = images && images.length > 0 ? images[0] : null;
+
       // Build updatedEvent ensuring all fields are properly set
       const updatedEvent: Event = {
         ...event,
@@ -198,6 +208,7 @@ const useEventOperations = (
             ? address?.trim() || null
             : event.address ?? null,
         images: images !== undefined ? images : event.images || [],
+        image_url: firstImageUrl ?? null, // Ensure it's never undefined
         liked: event.liked || false,
       };
 
@@ -241,12 +252,29 @@ const useEventOperations = (
             images: updatedEvent.images,
             address: updatedEvent.address,
             liked: updatedEvent.liked,
+            image_url: updatedEvent.image_url,
           }),
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        // Update the event with the response from the server to ensure image_url is synced
+        const updatedEventFromServer = await response.json();
+        // Convert snake_case to camelCase
+        const serverImageUrl =
+          updatedEventFromServer.image_url || updatedEventFromServer.imageUrl;
+        setTodos((prev) =>
+          prev.map((e) =>
+            e.id === id
+              ? {
+                  ...updatedEvent,
+                  image_url: serverImageUrl || updatedEvent.image_url,
+                }
+              : e
+          )
+        );
       } catch (error) {
         setTodos(previousTodos);
         handleError("editing", error);
@@ -297,6 +325,7 @@ const useEventOperations = (
             title: event.title,
             images: event.images,
             liked: event.liked,
+            image_url: event.image_url,
           }),
         });
 

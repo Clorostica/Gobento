@@ -123,8 +123,17 @@ router.post("/", authenticate, async (req, res) => {
   try {
     const { sub } = req.auth;
     const userId = sub;
-    const { id, status, text, title, colorClass, address, dueDate, startTime } =
-      req.body;
+    const {
+      id,
+      status,
+      text,
+      title,
+      colorClass,
+      address,
+      dueDate,
+      startTime,
+      image_url,
+    } = req.body;
 
     console.log("📝 Creating event:", {
       id,
@@ -152,7 +161,7 @@ router.post("/", authenticate, async (req, res) => {
     const cleanedDueDate = validateDate(dueDate);
 
     const result = await pool.query(
-      "INSERT INTO task_list(id, user_id, status, text, title, color_class, address, due_date, start_time) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      "INSERT INTO task_list(id, user_id, status, text, title, color_class, address, due_date, start_time, image_url) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
       [
         id,
         userId,
@@ -163,6 +172,7 @@ router.post("/", authenticate, async (req, res) => {
         address || null,
         cleanedDueDate,
         startTime || null,
+        image_url || null,
       ]
     );
 
@@ -183,8 +193,16 @@ router.put("/:eventId", authenticate, async (req, res) => {
   try {
     const { sub } = req.auth;
     const { eventId } = req.params;
-    const { status, text, title, address, dueDate, startTime, liked } =
-      req.body;
+    const {
+      status,
+      text,
+      title,
+      address,
+      dueDate,
+      startTime,
+      liked,
+      image_url,
+    } = req.body;
 
     console.log("📝 Updating event:", {
       eventId,
@@ -241,14 +259,19 @@ router.put("/:eventId", authenticate, async (req, res) => {
     const finalTitle =
       title !== undefined ? title || null : existingEvent.title;
 
+    // Handle image_url: use provided value or fallback to existing
+    const finalImageUrl =
+      image_url !== undefined ? image_url || null : existingEvent.image_url;
+
     console.log("💾 Saving values:", {
       address: finalAddress,
       dueDate: cleanedDueDate,
       startTime: finalStartTime,
+      image_url: finalImageUrl,
     });
 
     const result = await pool.query(
-      "UPDATE task_list SET status = $1, text = $2, title = $3, address = $4, due_date = $5, start_time = $6, liked = $7 WHERE id = $8 RETURNING *",
+      "UPDATE task_list SET status = $1, text = $2, title = $3, address = $4, due_date = $5, start_time = $6, liked = $7, image_url = $8 WHERE id = $9 RETURNING *",
       [
         status,
         finalText,
@@ -257,6 +280,7 @@ router.put("/:eventId", authenticate, async (req, res) => {
         cleanedDueDate,
         finalStartTime,
         likedValue,
+        finalImageUrl,
         eventId,
       ]
     );

@@ -213,7 +213,14 @@ const MagicBento: React.FC<BentoProps> = ({
 
     setEditAddress(addressValue);
 
-    setEditImages(event.images || []);
+    // Ensure image_url is included in images array if it exists
+    const eventImages = event.images || [];
+    const imageUrl = (event as any).imageUrl || (event as any).image_url;
+    if (imageUrl && !eventImages.includes(imageUrl)) {
+      setEditImages([imageUrl, ...eventImages]);
+    } else {
+      setEditImages(eventImages);
+    }
   };
 
   const handleEditSave = (eventId: string) => {

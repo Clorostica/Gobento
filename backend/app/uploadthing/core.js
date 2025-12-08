@@ -11,6 +11,6 @@ export const uploadRouter = {
       maxFileCount: 10,
     },
   }).onUploadComplete(({ file }) => {
-    console.log("Upload complete. File URL:", file.url);
+    console.log("Upload complete. File URL:", file.ufsUrl);
   }),
 };

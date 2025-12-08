@@ -6,10 +6,11 @@ export type Event = {
   colorClass: string | undefined;
   dueDate?: string | null; // ISO date string
   startTime?: string | null; // Time string (HH:mm format)
-  images?: string[]; // Array of base64 image strings
+  images?: string[]; // Array of base64 image strings or image URLs
   liked?: boolean; // Whether the event is liked
   address?: string | null; // Event address/location
   position?: number | null; // Event position/order in the list
+  image_url?: string | null; // Single image URL from uploadthing
 };
 
 // Keep Task as alias for backward compatibility during migration

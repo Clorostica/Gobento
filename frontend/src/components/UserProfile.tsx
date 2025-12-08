@@ -82,17 +82,27 @@ export default function UserProfile() {
       // Extract user info and events from response
       const userInfo = profileData.user || {};
 
-      // Convert events from snake_case to camelCase
-      const convertedEvents = (profileData.events || []).map((event: any) =>
-        Object.fromEntries(
+      // Convert events from snake_case to camelCase and add image_url to images array
+      const convertedEvents = (profileData.events || []).map((event: any) => {
+        const converted = Object.fromEntries(
           Object.entries(event).map(([key, value]) => [
             key.replace(/_([a-z])/g, (_, letter: string) =>
               letter.toUpperCase()
             ),
             value,
           ])
-        )
-      ) as Event[];
+        ) as Event;
+
+        // If image_url exists, add it to images array
+        if (
+          converted.image_url &&
+          !converted.images?.includes(converted.image_url)
+        ) {
+          converted.images = [converted.image_url, ...(converted.images || [])];
+        }
+
+        return converted;
+      }) as Event[];
 
       setProfile({
         id: userInfo.id || userId,
@@ -175,31 +185,7 @@ export default function UserProfile() {
           height: "100vh",
           zIndex: 0,
         }}
-      >
-        <PixelBlast
-          variant="circle"
-          pixelSize={6}
-          color="#B19EEF"
-          patternScale={3}
-          patternDensity={0.8}
-          pixelSizeJitter={0.5}
-          enableRipples
-          rippleSpeed={0.4}
-          rippleThickness={0.12}
-          rippleIntensityScale={1.5}
-          liquid
-          liquidStrength={0.12}
-          liquidRadius={1.2}
-          liquidWobbleSpeed={5}
-          speed={0.6}
-          edgeFade={0.25}
-          transparent={false}
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        />
-      </div>
+      ></div>
 
       <div
         style={{

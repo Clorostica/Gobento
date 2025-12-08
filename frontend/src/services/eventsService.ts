@@ -11,7 +11,18 @@ export class EventsService {
 
   async getAllEvents(): Promise<Event[]> {
     const response = await this.apiClient.get<EventsResponse>("/events");
-    return response.events || [];
+    const events = response.events || [];
+    return events.map((event: any) => {
+      const imageUrl = event.imageUrl || event.image_url;
+      if (imageUrl && !event.images?.includes(imageUrl)) {
+        return {
+          ...event,
+          images: [imageUrl, ...(event.images || [])],
+          image_url: imageUrl,
+        };
+      }
+      return event;
+    });
   }
 
   async getEventById(eventId: string): Promise<Event> {
@@ -22,7 +33,10 @@ export class EventsService {
     return this.apiClient.post<Event>("/events", eventData);
   }
 
-  async updateEvent(eventId: string, eventData: Partial<Event>): Promise<Event> {
+  async updateEvent(
+    eventId: string,
+    eventData: Partial<Event>
+  ): Promise<Event> {
     return this.apiClient.put<Event>(`/events/${eventId}`, eventData);
   }
 
@@ -34,4 +48,3 @@ export class EventsService {
     return this.apiClient.get<UserProfileResponse>(`/events/user/${userId}`);
   }
 }
-

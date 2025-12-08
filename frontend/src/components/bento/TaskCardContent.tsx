@@ -174,12 +174,23 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
               </div>
             )}
 
-            {task.images && task.images.length > 0 && (
-              <TaskImageViewer
-                images={task.images}
-                onImageClick={onImageClick}
-              />
-            )}
+            {(() => {
+              // Check for images array first, then fallback to image_url/imageUrl
+              const images = task.images || [];
+              const imageUrl =
+                (task as any).imageUrl || (task as any).image_url;
+
+              // If no images in array but imageUrl exists, use it
+              const displayImages =
+                images.length > 0 ? images : imageUrl ? [imageUrl] : [];
+
+              return displayImages.length > 0 ? (
+                <TaskImageViewer
+                  images={displayImages}
+                  onImageClick={onImageClick}
+                />
+              ) : null;
+            })()}
           </>
         )}
       </div>

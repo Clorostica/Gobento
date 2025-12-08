@@ -12,8 +12,12 @@ export class UsersService {
     return this.apiClient.get<UserResponse>("/users");
   }
 
-  async createUser(): Promise<UserResponse> {
-    return this.apiClient.post<UserResponse>("/users");
+  async createUser(username?: string): Promise<UserResponse> {
+    return this.apiClient.post<UserResponse>("/users", { username });
+  }
+
+  async updateUsername(username: string): Promise<UserResponse> {
+    return this.apiClient.put<UserResponse>("/users", { username });
   }
 
   async checkUserExists(): Promise<boolean> {

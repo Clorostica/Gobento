@@ -12,6 +12,7 @@ interface UserProfileData {
   id: string;
   email: string;
   name?: string | null;
+  username?: string | null;
   picture?: string | null;
   is_private?: boolean;
   isMutualFriend?: boolean;
@@ -97,6 +98,7 @@ export default function UserProfile() {
         id: userInfo.id || userId,
         email: userInfo.email || "",
         name: userInfo.name,
+        username: userInfo.username,
         picture: userInfo.picture,
       });
 
@@ -224,23 +226,25 @@ export default function UserProfile() {
                   {profile.picture ? (
                     <img
                       src={profile.picture}
-                      alt={profile.name || profile.email}
+                      alt={profile.username || profile.name || profile.email}
                       className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ring-2 ring-purple-500">
-                      {(profile.name || profile.email || "U")
+                      {(
+                        profile.username ||
+                        profile.name ||
+                        profile.email ||
+                        "U"
+                      )
                         .charAt(0)
                         .toUpperCase()}
                     </div>
                   )}
                   <div>
                     <h1 className="text-white font-bold text-xl">
-                      {profile.name || profile.email || "User Profile"}
+                      {profile.username ? profile.username : profile.email}
                     </h1>
-                    {profile.name && (
-                      <p className="text-gray-400 text-sm">{profile.email}</p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -253,13 +257,6 @@ export default function UserProfile() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-          <div className="mb-6">
-            <h2 className="text-white font-bold text-xl mb-4">
-              {profile.name || profile.email || "User"}'s Events
-            </h2>
-            <EventFilter filter={filter} setFilter={setFilter} />
-          </div>
-
           <ReadOnlyTodoList todos={events} search={search} filter={filter} />
         </main>
       </div>

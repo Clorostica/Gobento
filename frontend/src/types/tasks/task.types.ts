@@ -9,6 +9,7 @@ export type Event = {
   images?: string[]; // Array of base64 image strings
   liked?: boolean; // Whether the event is liked
   address?: string | null; // Event address/location
+  position?: number | null; // Event position/order in the list
 };
 
 // Keep Task as alias for backward compatibility during migration

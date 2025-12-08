@@ -15,6 +15,8 @@ import {
   getStatusColor,
   getStatusLabel,
   getStatusIcon,
+  getStatusBorderColor,
+  getStatusShadow,
 } from "./bento/utils";
 
 export interface BentoCardProps {
@@ -131,10 +133,20 @@ const MagicBento: React.FC<BentoProps> = ({
       const isMobileView = window.innerWidth <= 599;
       const fixedHeight = isMobileView ? 400 : 500;
 
-      // Apply fixed height to all cards
+      // Apply fixed height to cards, but allow cards with images to expand
       cards.forEach((card) => {
-        card.style.height = `${fixedHeight}px`;
-        card.style.minHeight = `${fixedHeight}px`;
+        // Check if this card has images by looking for img elements
+        const hasImages = card.querySelector("img") !== null;
+
+        if (hasImages) {
+          // Allow cards with images to expand automatically
+          card.style.height = "auto";
+          card.style.minHeight = `${fixedHeight}px`;
+        } else {
+          // Cards without images get fixed height
+          card.style.height = `${fixedHeight}px`;
+          card.style.minHeight = `${fixedHeight}px`;
+        }
       });
     };
 
@@ -323,7 +335,9 @@ const MagicBento: React.FC<BentoProps> = ({
     const cardProps = {
       className: baseClassName,
       style: {
-        backgroundColor: eventColor,
+        background: eventColor,
+        borderColor: getStatusBorderColor(event.status),
+        boxShadow: getStatusShadow(event.status),
         "--glow-color": glowColor,
         cursor: onReorder && editingId !== event.id ? "grab" : "default",
       } as React.CSSProperties,

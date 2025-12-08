@@ -35,7 +35,11 @@ const TaskImageViewer: React.FC<TaskImageViewerProps> = ({
             <img
               src={image}
               alt={`Task image ${index + 1}`}
-              className="w-full h-48 object-cover rounded border-2 border-purple-400 hover:border-purple-300 transition-colors"
+              className={`w-full rounded border-2 border-purple-400 hover:border-purple-300 transition-colors ${
+                images.length === 1
+                  ? "min-h-[400px] object-contain"
+                  : "h-48 object-cover"
+              }`}
             />
             {isGif && (
               <span className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded font-medium">

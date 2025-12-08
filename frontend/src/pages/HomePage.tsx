@@ -6,7 +6,6 @@ import Header from "../components/Header";
 import TodoList from "../components/TodoList";
 import Search from "../components/Search";
 import EventFilter from "../components/TaskFilter";
-import PixelBlast from "../components/PixelBlast";
 import {
   requestNotificationPermission,
   checkOverdueEvents,
@@ -14,12 +13,13 @@ import {
 import { useAuth, useApiClient } from "../hooks";
 import { EventsService, UsersService } from "../services";
 import { env } from "../config/env";
-import "../pixelblast.css";
+import { UsernameModal } from "../components/ui";
 
 interface Profile {
   id: string;
   email: string;
   name?: string | null;
+  username?: string | null;
   isPrivate: boolean;
 }
 
@@ -35,6 +35,8 @@ export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
 
   const eventsService = useMemo(
     () => new EventsService(apiClient),
@@ -53,8 +55,13 @@ export default function HomePage() {
           id: existingUser.id,
           email: existingUser.email,
           name: existingUser.name ?? null,
+          username: existingUser.username ?? null,
           isPrivate: existingUser.isPrivate ?? false,
         });
+        // Show username modal if user doesn't have a username
+        if (!existingUser.username) {
+          setShowUsernameModal(true);
+        }
         return;
       }
     } catch (error) {
@@ -69,8 +76,13 @@ export default function HomePage() {
           id: newUser.id,
           email: newUser.email || user?.email || "",
           name: newUser.name ?? user?.name ?? null,
+          username: newUser.username ?? null,
           isPrivate: newUser.isPrivate ?? false,
         });
+        // Show username modal for new users without username
+        if (!newUser.username) {
+          setShowUsernameModal(true);
+        }
       }
     } catch (error) {
       console.error("❌ Error creating user:", error);
@@ -149,8 +161,13 @@ export default function HomePage() {
           id: userData.id,
           email: userData.email || user.email || "",
           name: userData.name ?? user.name ?? null,
+          username: userData.username ?? null,
           isPrivate: userData.isPrivate ?? false,
         });
+        // Show username modal if user doesn't have a username
+        if (!userData.username) {
+          setShowUsernameModal(true);
+        }
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -163,6 +180,38 @@ export default function HomePage() {
     }
   }, [isAuthenticated, token, user, loadProfile]);
 
+  const handleUsernameSubmit = useCallback(
+    async (username: string) => {
+      if (!token) return;
+
+      setIsUpdatingUsername(true);
+      try {
+        const updatedUser = await usersService.updateUsername(username);
+        if (updatedUser.id) {
+          setProfile((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  username: updatedUser.username ?? null,
+                }
+              : null
+          );
+          setShowUsernameModal(false);
+        }
+      } catch (error: unknown) {
+        console.error("❌ Error updating username:", error);
+        // ApiClientError already contains the correct error message
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Failed to set username. Please try again.");
+      } finally {
+        setIsUpdatingUsername(false);
+      }
+    },
+    [token, usersService]
+  );
+
   if (isLoading) {
     return (
       <div
@@ -174,38 +223,6 @@ export default function HomePage() {
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 0,
-          }}
-        >
-          <PixelBlast
-            variant="circle"
-            pixelSize={6}
-            color="#B19EEF"
-            patternScale={3}
-            patternDensity={0.8}
-            pixelSizeJitter={0.5}
-            enableRipples
-            rippleSpeed={0.4}
-            rippleThickness={0.12}
-            rippleIntensityScale={1.5}
-            liquid
-            liquidStrength={0.12}
-            liquidRadius={1.2}
-            liquidWobbleSpeed={5}
-            speed={0.6}
-            edgeFade={0.25}
-            transparent={false}
-            style={{ width: "100%", height: "100%" }}
-          />
-        </div>
-
         <div
           style={{
             position: "relative",
@@ -229,41 +246,6 @@ export default function HomePage() {
 
   return (
     <div style={{}}>
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 0,
-        }}
-      >
-        <PixelBlast
-          variant="circle"
-          pixelSize={6}
-          color="#B19EEF"
-          patternScale={3}
-          patternDensity={0.8}
-          pixelSizeJitter={0.5}
-          enableRipples
-          rippleSpeed={0.4}
-          rippleThickness={0.12}
-          rippleIntensityScale={1.5}
-          liquid
-          liquidStrength={0.12}
-          liquidRadius={1.2}
-          liquidWobbleSpeed={5}
-          speed={0.6}
-          edgeFade={0.25}
-          transparent={false}
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        />
-      </div>
-
       {/* Content Layer */}
       <div
         style={{
@@ -326,8 +308,6 @@ export default function HomePage() {
           w-full
           py-4
           text-center text-sm
-          border-t border-gray-200/50
-          backdrop-blur-sm bg-white/20
           z-50
           mt-auto
         "
@@ -354,6 +334,15 @@ export default function HomePage() {
           </p>
         </footer>
       </div>
+
+      {/* Username Modal */}
+      <UsernameModal
+        isOpen={showUsernameModal}
+        onClose={() => setShowUsernameModal(false)}
+        onSubmit={handleUsernameSubmit}
+        isLoading={isUpdatingUsername}
+        canClose={!!profile?.username}
+      />
     </div>
   );
 }

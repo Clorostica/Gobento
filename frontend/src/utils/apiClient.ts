@@ -60,12 +60,19 @@ export const apiRequest = async <T>(
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new ApiClientError(
-        `HTTP error! status: ${response.status}`,
-        response.status,
-        errorText
-      );
+      let errorMessage = "Unknown error";
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } else {
+          errorMessage = await response.text().catch(() => "Unknown error");
+        }
+      } catch {
+        errorMessage = await response.text().catch(() => "Unknown error");
+      }
+      throw new ApiClientError(errorMessage, response.status);
     }
 
     const contentType = response.headers.get("content-type");

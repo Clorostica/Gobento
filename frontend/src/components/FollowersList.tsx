@@ -4,6 +4,7 @@ interface User {
   id: string;
   email: string;
   name?: string;
+  username?: string | null;
   picture?: string;
 }
 
@@ -22,7 +23,8 @@ export default function FollowersList({
     const searchLower = searchTerm.toLowerCase();
     return (
       u.email.toLowerCase().includes(searchLower) ||
-      u.name?.toLowerCase().includes(searchLower)
+      u.name?.toLowerCase().includes(searchLower) ||
+      u.username?.toLowerCase().includes(searchLower)
     );
   });
 

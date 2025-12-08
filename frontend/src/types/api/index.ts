@@ -19,6 +19,7 @@ export interface UserResponse {
   id?: string;
   email?: string;
   name?: string;
+  username?: string | null;
   isPrivate?: boolean;
 }
 

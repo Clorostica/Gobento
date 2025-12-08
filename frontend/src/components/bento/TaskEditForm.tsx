@@ -215,7 +215,14 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   };
 
   const handleRemoveImage = (index: number) => {
-    onImagesChange(images.filter((_, i) => i !== index));
+    const updatedImages = images.filter((_, i) => i !== index);
+    console.log(
+      "Removing image at index:",
+      index,
+      "Updated images:",
+      updatedImages
+    );
+    onImagesChange(updatedImages);
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -445,9 +452,13 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
                   </span>
                 )}
                 <button
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove image"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveImage(index);
+                  }}
+                  className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  title="Eliminar imagen"
                 >
                   ×
                 </button>

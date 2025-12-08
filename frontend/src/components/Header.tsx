@@ -15,7 +15,7 @@ interface HeaderProps {
 }
 
 const Header = ({ token, API_URL, userId }: HeaderProps) => {
-  const { user, isAuthenticated } = useAuth0<AuthUser>();
+  const { user, isAuthenticated, logout } = useAuth0<AuthUser>();
   const apiClient = useApiClient();
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
     useState(false);
@@ -23,6 +23,7 @@ const Header = ({ token, API_URL, userId }: HeaderProps) => {
 
   // Determinar el texto del botón según si es tu perfil o de otro usuario
   const buttonText = userId ? "👥 Connections" : "👥 Followers & Following";
+  const buttonTextMobile = userId ? "👥" : "👥";
 
   // Load username from API
   useEffect(() => {
@@ -67,12 +68,12 @@ const Header = ({ token, API_URL, userId }: HeaderProps) => {
 
   return (
     <>
-      <div className="flex justify-end items-center gap-2 sm:gap-3">
+      <div className="flex justify-end items-center gap-1.5 sm:gap-2 md:gap-3 flex-wrap">
         {isAuthenticated ? (
           <>
             <StarBorder
               onClick={() => setIsFollowersFollowingPanelOpen(true)}
-              className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+              className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base px-2 sm:px-3 py-1.5 sm:py-2"
               color="#B19EEF"
               speed="6s"
               thickness={2}
@@ -82,28 +83,55 @@ const Header = ({ token, API_URL, userId }: HeaderProps) => {
                   : "View your followers and following"
               }
             >
-              <span>{buttonText}</span>
+              <span className="hidden sm:inline">{buttonText}</span>
+              <span className="sm:hidden">{buttonTextMobile}</span>
             </StarBorder>
-            <Logout />
+            {/* Desktop: Full logout button */}
+            <div className="hidden sm:block">
+              <Logout />
+            </div>
+            {/* Mobile: Icon-only logout button */}
+            <button
+              onClick={() =>
+                logout({ logoutParams: { returnTo: window.location.origin } })
+              }
+              className="sm:hidden p-1.5 text-white hover:text-purple-300 transition-colors rounded"
+              title="Sign Out"
+              type="button"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
             {user && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {(user.picture || username || user.name) && (
                   <>
                     {user.picture ? (
                       <img
                         src={user.picture}
                         alt={username || user.name || user.email || "User"}
-                        className="rounded-full w-8 h-8 sm:w-10 sm:h-10 ring-2 ring-purple-500"
+                        className="rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 ring-2 ring-purple-500 flex-shrink-0"
                       />
                     ) : (
-                      <div className="rounded-full w-8 h-8 sm:w-10 sm:h-10 ring-2 ring-purple-500 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm sm:text-base">
+                      <div className="rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 ring-2 ring-purple-500 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm md:text-base flex-shrink-0">
                         {(username || user.name || user.email || "U")
                           .charAt(0)
                           .toUpperCase()}
                       </div>
                     )}
                     {(username || user.name || user.email) && (
-                      <span className="hidden sm:block text-white font-medium text-sm sm:text-base">
+                      <span className="hidden md:block text-white font-medium text-sm md:text-base truncate max-w-[120px] lg:max-w-none">
                         {username || user.name || user.email || ""}
                       </span>
                     )}

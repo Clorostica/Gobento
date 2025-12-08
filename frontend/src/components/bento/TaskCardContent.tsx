@@ -61,25 +61,25 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
   return (
     <div
       onClick={(e) => {
-        // ✅ FIX DEFINITIVO: si ya se está editando, NO volver a disparar onEditStart
         if (isEditing) return;
 
         const target = e.target as HTMLElement;
-        // Check if the click is on a button, input, textarea, or any interactive element
         const isButton =
           target.closest("button") ||
           target.closest("input") ||
           target.closest("textarea") ||
           target.closest("[role='button']") ||
           target.tagName === "BUTTON" ||
-          target.closest(".text-white.hover\\:text-red-300"); // Specific class for delete button
-        const isImage = target.closest("img");
+          target.closest(".text-white.hover\\:text-red-300");
+
+        // Check if clicking directly on an image (not just near it)
+        const isImage = target.tagName === "IMG";
         const isLink = target.closest("a");
         const isSVG = target.closest("svg") || target.tagName === "svg";
-        const isInteractive =
-          target.closest("[onClick]") && target !== e.currentTarget;
 
-        if (!isButton && !isImage && !isLink && !isSVG && !isInteractive) {
+        // Only prevent edit if clicking directly on interactive elements
+        // Clicking on the container around images should still allow editing
+        if (!isButton && !isImage && !isLink && !isSVG) {
           onEditStart(task);
         }
       }}

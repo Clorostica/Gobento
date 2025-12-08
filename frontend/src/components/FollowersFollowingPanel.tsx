@@ -17,7 +17,7 @@ interface FollowersFollowingPanelProps {
   onClose: () => void;
   token: string | null;
   API_URL: string;
-  userId?: string; // Optional: if provided, show followers/following of that user
+  userId?: string | undefined;
 }
 
 export default function FollowersFollowingPanel({
@@ -36,30 +36,6 @@ export default function FollowersFollowingPanel({
   const [searchTerm, setSearchTerm] = useState("");
   const { isAuthenticated } = useAuth0();
 
-  const checkIsFollowing = useCallback(
-    async (profileOwnerId: string): Promise<boolean> => {
-      if (!token) return false;
-
-      try {
-        const response = await fetch(
-          `${API_URL}/friends/is-following/${profileOwnerId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          return data.isFollowing || false;
-        }
-      } catch (error) {
-        console.error("Error checking following status:", error);
-      }
-      return false;
-    },
-    [token, API_URL]
-  );
-
   const loadFollowersAndFollowing = useCallback(async () => {
     if (!token || !isAuthenticated) return;
 
@@ -75,33 +51,20 @@ export default function FollowersFollowingPanel({
 
       if (response.ok) {
         const data = await response.json();
-        const followersList = data.followers || [];
+        // Following: gente que el usuario sigue (lo mismo que se muestra en "Friends")
         const followingList = data.following || [];
+        // Followers: gente que sigue al usuario
+        const followersList = data.followers || [];
 
-        // Check if following each user in the lists
-        const followersWithStatus = await Promise.all(
-          followersList.map(async (user: User) => {
-            const isFollowing = await checkIsFollowing(user.id);
-            return { ...user, isFollowing };
-          })
-        );
-
-        const followingWithStatus = await Promise.all(
-          followingList.map(async (user: User) => {
-            const isFollowing = await checkIsFollowing(user.id);
-            return { ...user, isFollowing };
-          })
-        );
-
-        setFollowers(followersWithStatus);
-        setFollowing(followingWithStatus);
+        setFollowing(followingList);
+        setFollowers(followersList);
       }
     } catch (error) {
       console.error("Error loading followers/following:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [token, API_URL, isAuthenticated, checkIsFollowing, userId]);
+  }, [token, API_URL, isAuthenticated, userId]);
 
   useEffect(() => {
     if (isOpen && token && isAuthenticated) {

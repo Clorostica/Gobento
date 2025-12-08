@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getEvents } from "../utils/storage";
 import type { Event } from "../types/tasks/task.types";
@@ -11,14 +11,10 @@ import {
   requestNotificationPermission,
   checkOverdueEvents,
 } from "../utils/notifications";
+import { useAuth, useApiClient } from "../hooks";
+import { EventsService, UsersService } from "../services";
+import { env } from "../config/env";
 import "../pixelblast.css";
-
-interface UserResponse {
-  id?: string;
-  email?: string;
-  name?: string;
-  is_private?: boolean;
-}
 
 interface Profile {
   id: string;
@@ -28,153 +24,81 @@ interface Profile {
 }
 
 export default function HomePage() {
-  const { user, getIdTokenClaims, isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated } = useAuth0();
+  const { token, isLoading } = useAuth();
+  const apiClient = useApiClient();
 
   const [search, setSearch] = useState<string>("");
   const [filter, setFilter] = useState<
     "all" | "planned" | "upcoming" | "happened" | "liked"
   >("all");
-  const [token, setToken] = useState<string | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  const API_URL = import.meta.env.VITE_API as string;
+  const eventsService = useMemo(
+    () => new EventsService(apiClient),
+    [apiClient]
+  );
+  const usersService = useMemo(() => new UsersService(apiClient), [apiClient]);
 
   const createUser = useCallback(async () => {
+    if (!token) return;
+
     try {
-      const tokenClaims = await getIdTokenClaims();
-      if (!tokenClaims) return;
-
-      const idToken = tokenClaims.__raw;
-      setToken(idToken);
-
-      const checkRes = await fetch(`${API_URL}/users`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-
-      if (checkRes.ok) {
-        try {
-          const contentType = checkRes.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const existingUsers: UserResponse = await checkRes.json();
-            if (existingUsers.email && existingUsers.id) {
-              // Set profile data
-              setProfile({
-                id: existingUsers.id,
-                email: existingUsers.email,
-                name: existingUsers.name ?? null,
-                isPrivate: existingUsers.is_private || false,
-              });
-              return;
-            }
-          }
-        } catch (parseError) {
-          console.error("Error parsing user response:", parseError);
-        }
+      // Check if user exists
+      const existingUser = await usersService.getCurrentUser();
+      if (existingUser.email && existingUser.id) {
+        setProfile({
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name ?? null,
+          isPrivate: existingUser.isPrivate ?? false,
+        });
+        return;
       }
-
-      const res = await fetch(`${API_URL}/users`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-
-      if (res.ok) {
-        try {
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const newUser: UserResponse = await res.json();
-            // Set profile data for newly created user
-            if (newUser.id) {
-              setProfile({
-                id: newUser.id,
-                email: newUser.email || user?.email || "",
-                name: newUser.name ?? user?.name ?? null,
-                isPrivate: newUser.is_private || false,
-              });
-            }
-          }
-        } catch (parseError) {
-          console.error("Error parsing create user response:", parseError);
-        }
-      } else {
-        const errorText = await res.text();
-        console.error(
-          "Error creating user:",
-          res.status,
-          errorText.substring(0, 200)
-        );
-      }
-    } catch (err) {
-      console.error("❌ Error creating/verifying user:", err);
+    } catch (error) {
+      // User doesn't exist, continue to create
     }
-  }, [getIdTokenClaims, API_URL, user]);
+
+    try {
+      // Create new user
+      const newUser = await usersService.createUser();
+      if (newUser.id) {
+        setProfile({
+          id: newUser.id,
+          email: newUser.email || user?.email || "",
+          name: newUser.name ?? user?.name ?? null,
+          isPrivate: newUser.isPrivate ?? false,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error creating user:", error);
+    }
+  }, [token, usersService, user]);
 
   const loadEvents = useCallback(async () => {
     setIsLoadingEvents(true);
     try {
-      // Si el usuario está autenticado, cargar desde la API
-      if (isAuthenticated && user) {
-        const tokenClaims = await getIdTokenClaims();
-        if (tokenClaims) {
-          const idToken = tokenClaims.__raw;
-          setToken(idToken);
-
-          const res = await fetch(`${API_URL}/events`, {
-            headers: { Authorization: `Bearer ${idToken}` },
-          });
-
-          if (!res.ok) {
-            const errorText = await res.text();
-            console.error("Error loading events:", errorText.substring(0, 200));
-            throw new Error(`Error loading events: ${res.status}`);
-          }
-
-          const contentType = res.headers.get("content-type");
-          if (!contentType || !contentType.includes("application/json")) {
-            const errorText = await res.text();
-            console.error(
-              "Unexpected response type:",
-              errorText.substring(0, 200)
-            );
-            throw new Error("Server returned non-JSON response");
-          }
-
-          const data = await res.json();
-          const events = data.events.map((event: Event) =>
-            Object.fromEntries(
-              Object.entries(event).map(([key, value]) => [
-                key.replace(/_([a-z])/g, (_, letter: string) =>
-                  letter.toUpperCase()
-                ),
-                value,
-              ])
-            )
-          );
-
-          // Establecer eventos desde la base de datos (no desde localStorage)
-          setEvents(events);
-        } else {
-          // Si no hay token, establecer eventos vacíos
-          setEvents([]);
-        }
+      // If user is authenticated, load from API
+      if (isAuthenticated && token) {
+        const events = await eventsService.getAllEvents();
+        setEvents(events);
       }
-      // Solo cargar desde localStorage si NO está autenticado y NO está cargando
+      // Only load from localStorage if NOT authenticated and NOT loading
       else if (!isAuthenticated && !isLoading) {
-        setToken(null);
         const localEvents = getEvents();
         setEvents(localEvents);
       }
-      // Si está cargando la autenticación, esperar sin cargar nada
+      // If authentication is loading, wait without loading anything
       else {
-        // Esperar a que termine la carga de autenticación
         setEvents([]);
       }
     } catch (err) {
       console.error("❌ Error loading events:", err);
-      // En caso de error:
-      // - Si está autenticado: mantener eventos vacíos (no usar localStorage)
-      // - Si no está autenticado: cargar desde localStorage como fallback
+      // On error:
+      // - If authenticated: keep events empty (don't use localStorage)
+      // - If not authenticated: load from localStorage as fallback
       if (isAuthenticated) {
         setEvents([]);
       } else if (!isLoading) {
@@ -186,7 +110,7 @@ export default function HomePage() {
     } finally {
       setIsLoadingEvents(false);
     }
-  }, [isAuthenticated, isLoading, user, getIdTokenClaims, API_URL]);
+  }, [isAuthenticated, isLoading, token, eventsService]);
 
   useEffect(() => {
     loadEvents();
@@ -219,29 +143,19 @@ export default function HomePage() {
     if (!token || !isAuthenticated || !user) return;
 
     try {
-      // Load current user's profile
-      const profileRes = await fetch(`${API_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (profileRes.ok) {
-        const contentType = profileRes.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const userData: UserResponse = await profileRes.json();
-          if (userData.id) {
-            setProfile({
-              id: userData.id,
-              email: userData.email || user.email || "",
-              name: userData.name ?? user.name ?? null,
-              isPrivate: userData.is_private || false,
-            });
-          }
-        }
+      const userData = await usersService.getCurrentUser();
+      if (userData.id) {
+        setProfile({
+          id: userData.id,
+          email: userData.email || user.email || "",
+          name: userData.name ?? user.name ?? null,
+          isPrivate: userData.isPrivate ?? false,
+        });
       }
     } catch (error) {
       console.error("Error loading profile:", error);
     }
-  }, [token, isAuthenticated, user, API_URL]);
+  }, [token, isAuthenticated, user, usersService]);
 
   useEffect(() => {
     if (isAuthenticated && token && user) {
@@ -375,7 +289,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex-shrink-0">
-                <Header token={token} API_URL={API_URL} />
+                <Header token={token} API_URL={env.API_URL} />
               </div>
             </div>
           </div>

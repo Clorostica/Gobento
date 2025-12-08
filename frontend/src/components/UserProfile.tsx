@@ -3,10 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import type { Event } from "@/types/tasks/task.types";
-import TodoList from "./TodoList";
 import EventFilter from "./TaskFilter";
 import PixelBlast from "./PixelBlast";
 import Header from "./Header";
+import ReadOnlyTodoList from "./ReadOnlyTodoList";
 
 interface UserProfileData {
   id: string;
@@ -31,12 +31,16 @@ export default function UserProfile() {
 
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [friends, setFriends] = useState<UserProfileData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [search, setSearch] = useState<string>("");
   const [filter, setFilter] = useState<
     "all" | "planned" | "upcoming" | "happened" | "liked"
   >("all");
+
+  // Determinar si es el perfil del usuario actual
+  const isOwnProfile = user?.sub === userId;
 
   const loadUserProfile = useCallback(async () => {
     if (!userId || !isAuthenticated) return;
@@ -49,12 +53,30 @@ export default function UserProfile() {
       const idToken = tokenClaims.__raw;
       setToken(idToken);
 
+      console.log("🔍 Loading profile for user:", userId);
+      console.log("👤 Current user:", user?.sub);
+      console.log("🏠 Is own profile:", isOwnProfile);
+
+      // Si es tu propio perfil, redirige a home
+      if (isOwnProfile) {
+        console.log("⚠️ Redirecting to home - viewing own profile");
+        navigate("/");
+        return;
+      }
+
       // Load user profile info
       const profileRes = await fetch(`${API_URL}/events/user/${userId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
 
+      if (!profileRes.ok) {
+        const errorData = await profileRes.json();
+        console.error("❌ Error response:", errorData);
+        throw new Error(errorData.error || "Failed to load profile");
+      }
+
       const profileData = await profileRes.json();
+      console.log("✅ Profile data loaded:", profileData);
 
       // Extract user info and events from response
       const userInfo = profileData.user || {};
@@ -74,14 +96,38 @@ export default function UserProfile() {
       setProfile({
         id: userInfo.id || userId,
         email: userInfo.email || "",
+        name: userInfo.name,
+        picture: userInfo.picture,
       });
+
       setEvents(convertedEvents);
+      // Los "followers" del backend son en realidad los amigos (following) del usuario
+      setFriends(profileData.followers || []);
+
+      console.log("✅ Friends loaded:", profileData.followers?.length || 0);
     } catch (error) {
       console.error("Error loading user profile:", error);
+      // Si el error es de autenticación, redirigir al home
+      if (error instanceof Error) {
+        if (error.message.includes("not your friend")) {
+          alert("You need to be friends with this user to view their profile");
+          navigate("/");
+        } else if (error.message.includes("Failed to load profile")) {
+          alert("Could not load user profile");
+          navigate("/");
+        }
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [userId, isAuthenticated, getIdTokenClaims, API_URL]);
+  }, [
+    userId,
+    isAuthenticated,
+    getIdTokenClaims,
+    isOwnProfile,
+    user?.sub,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (isAuthenticated && !authLoading && userId) {
@@ -200,7 +246,7 @@ export default function UserProfile() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Header token={token} API_URL={API_URL} />
+                <Header token={token} API_URL={API_URL} userId={userId} />
               </div>
             </div>
           </div>
@@ -208,18 +254,13 @@ export default function UserProfile() {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
           <div className="mb-6">
+            <h2 className="text-white font-bold text-xl mb-4">
+              {profile.name || profile.email || "User"}'s Events
+            </h2>
             <EventFilter filter={filter} setFilter={setFilter} />
           </div>
 
-          <TodoList
-            isAuthenticated={isAuthenticated}
-            todos={events}
-            setTodos={setEvents}
-            search={search}
-            filter={filter}
-            token={token}
-            profileOwnerName={profile.name || profile.email || "This user"}
-          />
+          <ReadOnlyTodoList todos={events} search={search} filter={filter} />
         </main>
       </div>
     </div>

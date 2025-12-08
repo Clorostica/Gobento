@@ -1,6 +1,7 @@
 interface ImportMetaEnv {
   readonly VITE_API: string;
-  // Añade todas tus variables de entorno aquí
+  readonly VITE_AUTH0_DOMAIN: string;
+  readonly VITE_AUTH0_CLIENT_ID: string;
 }
 
 interface ImportMeta {

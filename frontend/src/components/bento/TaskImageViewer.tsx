@@ -32,7 +32,7 @@ const TaskImageViewer: React.FC<TaskImageViewerProps> = ({
               alt={`Task image ${index + 1}`}
               className={`w-full transition-colors cursor-pointer ${
                 images.length === 1
-                  ? "min-h-[400px] object-contain"
+                  ? "min-h-[250px] object-contain"
                   : "h-48 object-cover"
               }`}
               onClick={(e) => {

@@ -58,14 +58,14 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
       {filters.map((f) => (
         <button
           key={f.value}
           onClick={() => setFilter(f.value)}
           className={`
             px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform
-            hover:scale-105 active:scale-95
+            hover:scale-105 active:scale-95 whitespace-nowrap flex items-center
             ${
               filter === f.value
                 ? `bg-gradient-to-r ${f.gradient} text-white shadow-lg shadow-${
@@ -76,8 +76,8 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
           `}
           title={`Filter by ${f.label}`}
         >
-          <span className="mr-2 text-base">{f.icon}</span>
-          {f.label}
+          <span className="mr-2 text-base flex-shrink-0">{f.icon}</span>
+          <span>{f.label}</span>
         </button>
       ))}
     </div>

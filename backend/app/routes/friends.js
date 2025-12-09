@@ -99,4 +99,111 @@ router.delete("/:friendId", authenticate, async (req, res) => {
   }
 });
 
+// GET - Check if current user is following another user
+router.get("/check/:userId", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    // Check if current user follows target user (unidirectional)
+    const followCheck = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM friends
+       WHERE user_id = $1 AND friend_user_id = $2`,
+      [sub, userId]
+    );
+
+    const isFollowing = parseInt(followCheck.rows[0].count) > 0;
+
+    res.json({ isFollowing });
+  } catch (err) {
+    console.error("Error checking follow status:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// GET - Get followers and following for current user
+router.get("/followers-following", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+
+    // Get following: users that the current user follows
+    // (where user_id = sub in friends table)
+    const followingResult = await pool.query(
+      `SELECT u.id, u.email, u.username
+       FROM friends f
+       JOIN users u ON f.friend_user_id = u.id
+       WHERE f.user_id = $1`,
+      [sub]
+    );
+
+    // Get followers: users that follow the current user
+    // (where friend_user_id = sub in friends table)
+    const followersResult = await pool.query(
+      `SELECT u.id, u.email, u.username
+       FROM friends f
+       JOIN users u ON f.user_id = u.id
+       WHERE f.friend_user_id = $1`,
+      [sub]
+    );
+
+    res.json({
+      following: followingResult.rows,
+      followers: followersResult.rows,
+    });
+  } catch (err) {
+    console.error("Error loading followers/following:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// GET - Get followers and following for a specific user
+router.get("/followers-following/:userId", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    // Get following: users that the target user follows
+    // (where user_id = userId in friends table)
+    const followingResult = await pool.query(
+      `SELECT u.id, u.email, u.username
+       FROM friends f
+       JOIN users u ON f.friend_user_id = u.id
+       WHERE f.user_id = $1`,
+      [userId]
+    );
+
+    // Get followers: users that follow the target user
+    // (where friend_user_id = userId in friends table)
+    const followersResult = await pool.query(
+      `SELECT u.id, u.email, u.username
+       FROM friends f
+       JOIN users u ON f.user_id = u.id
+       WHERE f.friend_user_id = $1`,
+      [userId]
+    );
+
+    res.json({
+      following: followingResult.rows,
+      followers: followersResult.rows,
+    });
+  } catch (err) {
+    console.error("Error loading followers/following:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 export default router;

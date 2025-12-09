@@ -12,9 +12,10 @@ interface HeaderProps {
   token: string | null;
   API_URL: string;
   userId?: string | undefined;
+  showConnections?: boolean;
 }
 
-const Header = ({ token, API_URL, userId }: HeaderProps) => {
+const Header = ({ token, API_URL, userId, showConnections = true }: HeaderProps) => {
   const { user, isAuthenticated, logout } = useAuth0<AuthUser>();
   const apiClient = useApiClient();
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
@@ -71,24 +72,26 @@ const Header = ({ token, API_URL, userId }: HeaderProps) => {
       <div className="flex justify-end items-center gap-1.5 sm:gap-2 md:gap-3 flex-wrap">
         {isAuthenticated ? (
           <>
-            <StarBorder
-              onClick={() => setIsFollowersFollowingPanelOpen(true)}
-              className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base px-2 sm:px-3 py-1.5 sm:py-2"
-              color="#B19EEF"
-              speed="6s"
-              thickness={2}
-              title={
-                userId
-                  ? "View this user's connections"
-                  : "View your followers and following"
-              }
-            >
-              <span className="hidden sm:inline">{buttonText}</span>
-              <span className="sm:hidden">{buttonTextMobile}</span>
-            </StarBorder>
+            {showConnections && (
+              <StarBorder
+                onClick={() => setIsFollowersFollowingPanelOpen(true)}
+                className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                color="#B19EEF"
+                speed="6s"
+                thickness={2}
+                title={
+                  userId
+                    ? "View this user's connections"
+                    : "View your followers and following"
+                }
+              >
+                <span className="hidden sm:inline">{buttonText}</span>
+                <span className="sm:hidden">{buttonTextMobile}</span>
+              </StarBorder>
+            )}
             {/* Desktop: Full logout button */}
             <div className="hidden sm:block">
-              <Logout />
+            <Logout />
             </div>
             {/* Mobile: Icon-only logout button */}
             <button

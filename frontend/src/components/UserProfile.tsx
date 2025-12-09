@@ -4,9 +4,9 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import type { Event } from "@/types/tasks/task.types";
 import EventFilter from "./TaskFilter";
-import PixelBlast from "./PixelBlast";
 import Header from "./Header";
 import ReadOnlyTodoList from "./ReadOnlyTodoList";
+import StarBorder from "./StarBorder";
 
 interface UserProfileData {
   id: string;
@@ -39,6 +39,9 @@ export default function UserProfile() {
   const [filter, setFilter] = useState<
     "all" | "planned" | "upcoming" | "happened" | "liked"
   >("all");
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [showFollowModal, setShowFollowModal] = useState(false);
 
   // Determinar si es el perfil del usuario actual
   const isOwnProfile = user?.sub === userId;
@@ -65,13 +68,81 @@ export default function UserProfile() {
         return;
       }
 
-      // Load user profile info
+      // First check if we're following this user
+      let isFollowingUser = false;
+      try {
+        const followCheckRes = await fetch(
+          `${API_URL}/friends/check/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
+        if (followCheckRes.ok) {
+          const followData = await followCheckRes.json();
+          isFollowingUser = followData.isFollowing || false;
+          setIsFollowing(isFollowingUser);
+          console.log("✅ Follow status checked:", isFollowingUser);
+        } else {
+          console.warn(
+            "⚠️ Could not check follow status, assuming not following"
+          );
+          setIsFollowing(false);
+        }
+      } catch (error) {
+        console.error("Error checking follow status:", error);
+        // If connection refused, backend might not be running
+        if (
+          error instanceof TypeError &&
+          error.message.includes("Failed to fetch")
+        ) {
+          console.error("❌ Backend connection error - is the server running?");
+        }
+        setIsFollowing(false);
+      }
+
       const profileRes = await fetch(`${API_URL}/events/user/${userId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
 
       if (!profileRes.ok) {
-        const errorData = await profileRes.json();
+        let errorData;
+        try {
+          errorData = await profileRes.json();
+        } catch (e) {
+          // If response is not JSON, might be connection error
+          if (profileRes.status === 0 || !profileRes.status) {
+            throw new Error(
+              "Cannot connect to server. Please make sure the backend is running."
+            );
+          }
+          errorData = { error: "Failed to load profile" };
+        }
+
+        // If we're not following, we can still show basic profile info
+        if (profileRes.status === 403 || profileRes.status === 404) {
+          // Try to get basic user info
+          try {
+            const userInfoRes = await fetch(`${API_URL}/users/${userId}`, {
+              headers: { Authorization: `Bearer ${idToken}` },
+            });
+            if (userInfoRes.ok) {
+              const userInfo = await userInfoRes.json();
+              setProfile({
+                id: userInfo.id || userId,
+                email: userInfo.email || "",
+                name: userInfo.name,
+                username: userInfo.username,
+                picture: userInfo.picture,
+              });
+            }
+          } catch (error) {
+            console.error("Error loading user info:", error);
+          }
+          setEvents([]);
+          setFriends([]);
+          // Keep the follow status from the check above
+          return;
+        }
         console.error("❌ Error response:", errorData);
         throw new Error(errorData.error || "Failed to load profile");
       }
@@ -113,8 +184,14 @@ export default function UserProfile() {
       });
 
       setEvents(convertedEvents);
-      // Los "followers" del backend son en realidad los amigos (following) del usuario
+      // Los "followers" del backend son los usuarios que siguen a este usuario
       setFriends(profileData.followers || []);
+
+      // If we can access their events, we must be following them
+      // But keep the status from the check above to be consistent
+      if (!isFollowingUser) {
+        setIsFollowing(true);
+      }
 
       console.log("✅ Friends loaded:", profileData.followers?.length || 0);
     } catch (error) {
@@ -146,6 +223,90 @@ export default function UserProfile() {
       loadUserProfile();
     }
   }, [isAuthenticated, authLoading, userId, loadUserProfile]);
+
+  // Mostrar modal automáticamente cuando se carga el perfil y no se está siguiendo
+  useEffect(() => {
+    if (
+      !isLoading &&
+      profile &&
+      !isFollowing &&
+      !isOwnProfile &&
+      !showFollowModal
+    ) {
+      setShowFollowModal(true);
+    }
+  }, [isLoading, profile, isFollowing, isOwnProfile, showFollowModal]);
+
+  const handleFollowToggle = async () => {
+    if (!token || !userId) return;
+
+    // Si ya está siguiendo, unfollow directamente
+    if (isFollowing) {
+      await executeFollowToggle(true);
+    }
+    // Si no está siguiendo, el modal ya debería estar visible
+  };
+
+  const executeFollowToggle = async (isUnfollow: boolean = false) => {
+    if (!token || !userId) return;
+
+    setIsFollowLoading(true);
+    const wasFollowing = isFollowing;
+
+    try {
+      const endpoint = isUnfollow
+        ? `${API_URL}/events/unfollow/${userId}`
+        : `${API_URL}/events/follow/${userId}`;
+
+      console.log(
+        `🔄 ${isUnfollow ? "Unfollowing" : "Following"} user ${userId}`
+      );
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Follow/unfollow failed:", errorData);
+        throw new Error(errorData.error || "Failed to update follow status");
+      }
+
+      const responseData = await response.json().catch(() => ({}));
+      console.log("✅ Follow/unfollow successful:", responseData);
+
+      // Update following state immediately (optimistic update)
+      const newFollowingState = !isUnfollow;
+      setIsFollowing(newFollowingState);
+      console.log(`✅ State updated: isFollowing = ${newFollowingState}`);
+
+      // If we just followed, reload the profile to get events
+      if (newFollowingState) {
+        console.log("🔄 Reloading profile to get events...");
+        await loadUserProfile();
+      } else {
+        // If we unfollowed, clear events since we can't see them anymore
+        console.log("🔄 Clearing events (unfollowed)");
+        setEvents([]);
+      }
+    } catch (error) {
+      console.error("❌ Error toggling follow:", error);
+      // Revert state on error
+      setIsFollowing(wasFollowing);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to update follow status"
+      );
+    } finally {
+      setIsFollowLoading(false);
+      setShowFollowModal(false);
+    }
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -196,27 +357,27 @@ export default function UserProfile() {
           flexDirection: "column",
         }}
       >
-        <header className="sticky top-0 z-50 w-full px-6 py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
-          <div className="w-full sm:max-w-7xl sm:mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-5">
-            <div className="flex items-center justify-between mb-2 sm:mb-0">
-              <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
+          <div className="w-full sm:max-w-7xl sm:mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
                 <button
                   onClick={() => navigate("/")}
-                  className="text-white hover:text-purple-300 transition-colors p-2"
+                  className="text-white hover:text-purple-300 transition-colors p-1.5 sm:p-2 flex-shrink-0"
                   title="Go back"
                 >
-                  <ArrowLeft size={24} />
+                  <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
                   {profile.picture ? (
                     <img
                       src={profile.picture}
                       alt={profile.username || profile.name || profile.email}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500"
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover ring-2 ring-purple-500 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ring-2 ring-purple-500">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ring-2 ring-purple-500 flex-shrink-0 text-sm sm:text-base">
                       {(
                         profile.username ||
                         profile.name ||
@@ -227,25 +388,111 @@ export default function UserProfile() {
                         .toUpperCase()}
                     </div>
                   )}
-                  <div>
-                    <h1 className="text-white font-bold text-xl">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-white font-bold text-base sm:text-xl truncate">
                       {profile.username ? profile.username : profile.email}
                     </h1>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Header token={token} API_URL={API_URL} userId={userId} />
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end sm:justify-start">
+                <StarBorder
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  color={isFollowing ? "#9CA3AF" : "#B19EEF"}
+                  speed="6s"
+                  thickness={2}
+                  className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  title={isFollowing ? "Unfollow user" : "Follow user"}
+                >
+                  {isFollowLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span className="hidden sm:inline">Loading...</span>
+                    </>
+                  ) : isFollowing ? (
+                    "Following"
+                  ) : (
+                    "Follow"
+                  )}
+                </StarBorder>
+                <div className="flex-shrink-0">
+                  <Header
+                    token={token}
+                    API_URL={API_URL}
+                    userId={userId}
+                    showConnections={isFollowing}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-          <ReadOnlyTodoList todos={events} search={search} filter={filter} />
+        <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-grow w-full">
+          <ReadOnlyTodoList
+            todos={events}
+            search={search}
+            filter={filter}
+            isFollowing={isFollowing}
+          />
         </main>
       </div>
+
+      {/* Follow Confirmation Modal */}
+      {showFollowModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
+          {/* Overlay - No bloquea interacciones */}
+          <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
+
+          {/* Modal Content - Centered */}
+          <div
+            className="relative bg-black/90 backdrop-blur-md border border-purple-500/30 rounded-[20px] p-6 sm:p-8 max-w-md w-full shadow-2xl z-10 pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-bold text-xl sm:text-2xl mb-4 text-center">
+              Follow User
+            </h2>
+            <p className="text-white/80 text-center mb-6 text-sm sm:text-base">
+              Do you want to follow{" "}
+              <span className="font-semibold text-purple-300">
+                {profile?.username || profile?.name || profile?.email}
+              </span>
+              ?
+            </p>
+
+            <div className="flex gap-3 sm:gap-4 justify-center">
+              <StarBorder
+                onClick={() => setShowFollowModal(false)}
+                color="#9CA3AF"
+                speed="6s"
+                thickness={2}
+                className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 text-sm sm:text-base px-6 py-2.5"
+              >
+                Cancel
+              </StarBorder>
+              <StarBorder
+                onClick={() => executeFollowToggle(false)}
+                disabled={isFollowLoading}
+                color="#B19EEF"
+                speed="6s"
+                thickness={2}
+                className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 text-sm sm:text-base px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isFollowLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  "Follow"
+                )}
+              </StarBorder>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

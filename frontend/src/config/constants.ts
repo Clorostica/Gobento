@@ -28,26 +28,6 @@ export const COLOR_CLASSES = [
   "bg-gradient-to-br from-violet-50/80 to-violet-100/40 border-violet-200/60 hover:border-violet-300 shadow-sm",
 ] as const;
 
-export const PIXEL_BLAST_CONFIG = {
-  variant: "circle" as const,
-  pixelSize: 6,
-  color: "#B19EEF",
-  patternScale: 3,
-  patternDensity: 0.8,
-  pixelSizeJitter: 0.5,
-  enableRipples: true,
-  rippleSpeed: 0.4,
-  rippleThickness: 0.12,
-  rippleIntensityScale: 1.5,
-  liquid: true,
-  liquidStrength: 0.12,
-  liquidRadius: 1.2,
-  liquidWobbleSpeed: 5,
-  speed: 0.6,
-  edgeFade: 0.25,
-  transparent: false,
-} as const;
-
 export const STORAGE_KEYS = {
   NO_USER_EVENTS: "events:nouser",
 } as const;

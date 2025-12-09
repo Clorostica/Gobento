@@ -60,6 +60,7 @@ export interface BentoProps {
   onLikeToggle?: (id: string, liked: boolean) => void;
   addTask?: (status?: string | "planned" | "upcoming" | "happened") => void;
   currentFilter?: "all" | "planned" | "upcoming" | "happened" | "liked";
+  isFollowing?: boolean;
 }
 
 const useMobileDetection = () => {
@@ -98,6 +99,7 @@ const MagicBento: React.FC<BentoProps> = ({
   onLikeToggle,
   addTask,
   currentFilter = "all",
+  isFollowing = true,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
@@ -526,7 +528,7 @@ const MagicBento: React.FC<BentoProps> = ({
       <BentoCardGrid gridRef={gridRef}>
         {tasks.length > 0 ? (
           tasks.map((event, index) => renderTaskCard(event, index))
-        ) : (
+        ) : isFollowing ? (
           <div className="magic-bento-card col-span-full text-center p-8 opacity-50">
             <p>
               No events yet.{" "}
@@ -544,7 +546,7 @@ const MagicBento: React.FC<BentoProps> = ({
               )}
             </p>
           </div>
-        )}
+        ) : null}
         {addTask && currentFilter !== "liked" && (
           <div
             className="magic-bento-card add-new-task-card cursor-pointer flex items-center justify-center hover:opacity-80 transition-opacity border-2 border-dashed border-purple-400"

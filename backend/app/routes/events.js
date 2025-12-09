@@ -69,8 +69,9 @@ router.get("/user/:userId", authenticate, async (req, res) => {
     }
 
     // Check if user exists
+    // Only select columns that exist in the table
     const userCheck = await pool.query(
-      "SELECT id, email FROM users WHERE id = $1",
+      "SELECT id, email, username FROM users WHERE id = $1",
       [userId]
     );
 
@@ -80,18 +81,20 @@ router.get("/user/:userId", authenticate, async (req, res) => {
 
     const targetUser = userCheck.rows[0];
 
-    // Check if user is friend
-    const friendCheck = await pool.query(
+    // Check if current user follows target user (unidirectional)
+    const followCheck = await pool.query(
       `SELECT COUNT(*) as count
        FROM friends
        WHERE user_id = $1 AND friend_user_id = $2`,
-      [userId, sub]
+      [sub, userId]
     );
 
-    const isFriend = parseInt(friendCheck.rows[0].count) > 0;
+    const isFollowing = parseInt(followCheck.rows[0].count) > 0;
 
-    if (!isFriend) {
-      return res.status(404).json({ error: "User not friend" });
+    if (!isFollowing) {
+      return res
+        .status(403)
+        .json({ error: "You must follow this user to view their events" });
     }
 
     // Get user's events
@@ -100,13 +103,35 @@ router.get("/user/:userId", authenticate, async (req, res) => {
       [userId]
     );
 
+    // Get followers (users who follow this user - they are "friends")
+    // Only select columns that exist in the users table
+    let followersResult;
+    try {
+      followersResult = await pool.query(
+        `SELECT 
+          u.id, 
+          u.email, 
+          u.username
+         FROM friends f
+         JOIN users u ON f.user_id = u.id
+         WHERE f.friend_user_id = $1`,
+        [userId]
+      );
+    } catch (err) {
+      console.error("Error fetching followers:", err);
+      // If there's an error, return empty array
+      followersResult = { rows: [] };
+    }
+
     res.json({
       events: result.rows,
       total: result.rows.length,
       user: {
         id: targetUser.id,
         email: targetUser.email,
+        username: targetUser.username || null,
       },
+      followers: followersResult.rows,
     });
   } catch (err) {
     console.error("Error loading user's events:", err);
@@ -330,6 +355,98 @@ router.delete("/:id", authenticate, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// POST - Follow a user (unidirectional: current user follows target user)
+router.post("/follow/:userId", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    if (sub === userId) {
+      return res.status(400).json({ error: "Cannot follow yourself" });
+    }
+
+    // Check if target user exists
+    const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [
+      userId,
+    ]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if already following
+    const existingFollow = await pool.query(
+      `SELECT * FROM friends 
+       WHERE user_id = $1 AND friend_user_id = $2`,
+      [sub, userId]
+    );
+
+    if (existingFollow.rows.length > 0) {
+      return res.status(400).json({ error: "Already following this user" });
+    }
+
+    // Create follow relationship (unidirectional)
+    const insertResult = await pool.query(
+      `INSERT INTO friends (user_id, friend_user_id) 
+       VALUES ($1, $2) 
+       RETURNING *`,
+      [sub, userId]
+    );
+
+    console.log("✅ Follow relationship created:", {
+      user_id: sub,
+      friend_user_id: userId,
+      id: insertResult.rows[0]?.id,
+    });
+
+    res.json({
+      message: "Successfully followed user",
+      success: true,
+    });
+  } catch (err) {
+    console.error("Error following user:", err);
+    if (err.code === "23505") {
+      return res.status(400).json({ error: "Already following this user" });
+    }
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// POST - Unfollow a user
+router.post("/unfollow/:userId", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    // Remove follow relationship (only the one where current user follows target)
+    const result = await pool.query(
+      `DELETE FROM friends 
+       WHERE user_id = $1 AND friend_user_id = $2`,
+      [sub, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Not following this user" });
+    }
+
+    res.json({ message: "Successfully unfollowed user" });
+  } catch (err) {
+    console.error("Error unfollowing user:", err);
     res.status(500).json({ error: "Database error" });
   }
 });

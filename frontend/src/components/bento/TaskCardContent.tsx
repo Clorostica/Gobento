@@ -4,6 +4,10 @@ import TaskHeader from "./TaskHeader";
 import TaskEditForm from "./TaskEditForm";
 import TaskDateDisplay from "./TaskDateDisplay";
 import TaskImageViewer from "./TaskImageViewer";
+import HeartButton from "./HeartButton";
+import FloatingCopyButton from "./FloatingCopyButton";
+import TextWithMentions from "./TextWithMentions";
+import { getStatusIcon, getStatusLabel } from "./utils";
 
 interface TaskCardContentProps {
   task: Task;
@@ -29,6 +33,10 @@ interface TaskCardContentProps {
   onImageClick: (image: string) => void;
   onLikeToggle?: (task: Task) => void;
   onHeaderKeyDown?: (e: React.KeyboardEvent, task: Task) => void;
+  isReadOnly?: boolean;
+  onCopyEvent?: (task: Task) => void;
+  copiedEventIds?: Set<string>;
+  copyingEventId?: string | null;
 }
 
 const TaskCardContent: React.FC<TaskCardContentProps> = ({
@@ -55,13 +63,19 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
   onImageClick,
   onLikeToggle,
   onHeaderKeyDown,
+  isReadOnly = false,
+  onCopyEvent,
+  copiedEventIds,
+  copyingEventId,
 }) => {
   const isEditing = editingId === task.id;
 
   return (
     <div
       onClick={(e) => {
-        if (isEditing) return;
+        if (isEditing || isReadOnly) return; // Prevent editing in read-only mode
+        // Prevent editing events shared from other users
+        if (task.sharedFromUserId != null) return;
 
         const target = e.target as HTMLElement;
         const isButton =
@@ -83,25 +97,99 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
           onEditStart(task);
         }
       }}
-      className="cursor-pointer"
+      className={`relative ${
+        isReadOnly ? "" : "cursor-pointer"
+      } overflow-visible`}
     >
+      {/* Copy Event Button - Floating top right corner */}
+      {onCopyEvent && isReadOnly && (
+        <FloatingCopyButton
+          task={task}
+          isCopied={copiedEventIds?.has(task.id) || false}
+          isCopying={copyingEventId === task.id}
+          onCopyEvent={onCopyEvent}
+        />
+      )}
+
+      {/* Top bar with like, status, and delete buttons */}
+      {!isEditing && (
+        <div className="flex justify-end items-center gap-2 mb-4 relative z-20 -mr-4">
+          {onLikeToggle && (
+            <HeartButton
+              isLiked={task.liked || false}
+              onToggle={() => {
+                onLikeToggle?.(task);
+              }}
+              size="md"
+            />
+          )}
+          {!isReadOnly && !task.sharedFromUserId && (
+            <span
+              className="text-lg opacity-60"
+              title={getStatusLabel(task.status)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusClick(task);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              style={{ cursor: "pointer" }}
+            >
+              {getStatusIcon(task.status)}
+            </span>
+          )}
+          {!isReadOnly && task.sharedFromUserId && (
+            <span
+              className="text-lg opacity-60"
+              title={getStatusLabel(task.status)}
+            >
+              {getStatusIcon(task.status)}
+            </span>
+          )}
+          {isReadOnly && (
+            <span
+              className="text-lg opacity-60"
+              title={getStatusLabel(task.status)}
+            >
+              {getStatusIcon(task.status)}
+            </span>
+          )}
+          {onDelete && !isReadOnly && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="text-white hover:text-red-300 text-xs px-2 py-1 rounded transition-colors z-10 relative"
+              title="Delete"
+              type="button"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
       {!isEditing && (
         <TaskHeader
           task={task}
           isEditing={isEditing}
           onEditStart={() => onEditStart(task)}
-          {...(onDelete ? { onDelete } : {})}
           onStatusClick={() => onStatusClick(task)}
-          {...(onLikeToggle
-            ? {
-                onLikeToggle: () => onLikeToggle(task),
-              }
-            : {})}
           {...(onHeaderKeyDown
             ? {
                 onKeyDown: (e: React.KeyboardEvent) => onHeaderKeyDown(e, task),
               }
             : {})}
+          isReadOnly={isReadOnly}
+          onCopyEvent={onCopyEvent ? () => onCopyEvent(task) : undefined}
+          isCopied={copiedEventIds?.has(task.id) || false}
+          isCopying={copyingEventId === task.id}
+          hideActions={true}
         />
       )}
 
@@ -130,10 +218,16 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
           <>
             {task.text && task.text !== task.title && (
               <div className="mb-3">
-                <p
-                  className="text-sm text-white leading-relaxed cursor-pointer hover:opacity-80 transition-opacity"
+                <TextWithMentions
+                  text={task.text}
+                  className={`text-sm text-white leading-relaxed transition-opacity ${
+                    !isReadOnly && !task.sharedFromUserId
+                      ? "cursor-pointer hover:opacity-80"
+                      : ""
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isReadOnly || task.sharedFromUserId) return;
                     onEditStart(task);
                     setTimeout(() => {
                       const descTextarea = document.querySelector(
@@ -148,9 +242,7 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                       }
                     }, 100);
                   }}
-                >
-                  {task.text}
-                </p>
+                />
               </div>
             )}
 

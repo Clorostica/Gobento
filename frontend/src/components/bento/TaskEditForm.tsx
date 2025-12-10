@@ -1,6 +1,9 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { compressImage } from "../../utils/imageHandler";
 import { uploadMultipleFiles } from "../../utils/uploadthing";
+import { useApiClient, useAuth } from "../../hooks";
+import { FriendsService, type User } from "../../services";
 
 interface TaskEditFormProps {
   taskId: string;
@@ -49,6 +52,15 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   const emojiScrollRef = useRef<HTMLDivElement | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [mentionableUsers, setMentionableUsers] = useState<User[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const mentionsRef = useRef<HTMLDivElement | null>(null);
+  const apiClient = useApiClient();
+  const { isAuthenticated } = useAuth0();
+  const { token } = useAuth();
 
   const emojis = [
     "😊",
@@ -136,9 +148,39 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         textarea.setSelectionRange(0, 0);
       }
     }
-  }, []);
+  }, [title]);
 
-  // Cerrar el picker al hacer click fuera
+  // Load mentionable users (followers + following)
+  useEffect(() => {
+    // Only load if user is authenticated and token is available
+    if (!isAuthenticated || !token) {
+      setMentionableUsers([]);
+      return;
+    }
+
+    const loadMentionableUsers = async () => {
+      try {
+        const friendsService = new FriendsService(apiClient);
+        const data = await friendsService.getFollowersAndFollowing();
+
+        const allUsers = [...(data.followers || []), ...(data.following || [])];
+        const uniqueUsers = allUsers.filter(
+          (user, index, self) =>
+            index === self.findIndex((u) => u.id === user.id)
+        );
+
+        setMentionableUsers(uniqueUsers);
+      } catch (error) {
+        console.error("Error loading mentionable users:", error);
+        // Set empty array on error to prevent issues
+        setMentionableUsers([]);
+      }
+    };
+
+    loadMentionableUsers();
+  }, [apiClient, isAuthenticated, token]);
+
+  // Cerrar el picker al hacer click fuera - MEJORADO
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -147,23 +189,30 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       ) {
         setShowEmojiPicker(false);
       }
+      if (
+        mentionsRef.current &&
+        !mentionsRef.current.contains(event.target as Node) &&
+        descriptionTextareaRef.current &&
+        !descriptionTextareaRef.current.contains(event.target as Node)
+      ) {
+        setShowMentions(false);
+      }
     };
 
-    if (showEmojiPicker) {
+    if (showEmojiPicker || showMentions) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showEmojiPicker]);
+  }, [showEmojiPicker, showMentions]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
-      // Filter only image files
       const imageFiles = Array.from(files).filter((file) =>
         file.type.startsWith("image/")
       );
@@ -177,7 +226,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Compress images (except GIFs) before uploading
       const processedFiles = await Promise.all(
         imageFiles.map(async (file) => {
           if (file.type === "image/gif") {
@@ -187,7 +235,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         })
       );
 
-      // Upload files to uploadthing with progress tracking
       const uploadedUrls = await uploadMultipleFiles(
         processedFiles,
         (progress) => {
@@ -195,11 +242,9 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         }
       );
 
-      // Add the uploaded URLs to the images array
       onImagesChange([...images, ...uploadedUrls]);
       setUploadProgress(100);
 
-      // Reset progress after a short delay
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
@@ -233,13 +278,77 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
     textarea.style.height = `${Math.max(80, textarea.scrollHeight)}px`;
   };
 
+  // MEJORADO: Detección de @ más robusta
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.stopPropagation();
-    onTextChange(e.target.value);
+    const value = e.target.value;
+    onTextChange(value);
     const textarea = e.target;
     textarea.style.height = "auto";
     textarea.style.height = `${Math.max(120, textarea.scrollHeight)}px`;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+
+    // Regex mejorado: captura @ seguido de letras, números o guión bajo
+    const mentionMatch = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+    if (mentionMatch) {
+      const query = mentionMatch[1] || "";
+      setMentionQuery(query);
+
+      // Mostrar dropdown si hay usuarios disponibles
+      if (mentionableUsers.length > 0) {
+        setShowMentions(true);
+        setSelectedMentionIndex(0);
+      }
+    } else {
+      setShowMentions(false);
+    }
   };
+
+  // Filtro más flexible con includes en lugar de startsWith
+  const filteredMentions = mentionableUsers.filter((user) => {
+    const username = (user.username || user.email || "").toLowerCase();
+    const query = mentionQuery.toLowerCase();
+
+    // Si no hay query (solo escribió @), muestra todos
+    if (query.length === 0) return true;
+
+    // Busca que contenga el query
+    return username.includes(query);
+  });
+
+  const insertMention = useCallback(
+    (user: User) => {
+      if (!descriptionTextareaRef.current) return;
+      const textarea = descriptionTextareaRef.current;
+      const value = text;
+      const cursorPosition = textarea.selectionStart;
+      const textBeforeCursor = value.substring(0, cursorPosition);
+      const mentionMatch = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+      if (mentionMatch) {
+        const username = user.username || user.email || "";
+        const beforeMention = textBeforeCursor.substring(
+          0,
+          mentionMatch.index || 0
+        );
+        const afterCursor = value.substring(cursorPosition);
+        const newText = `${beforeMention}@${username} ${afterCursor}`;
+        onTextChange(newText);
+
+        setTimeout(() => {
+          textarea.focus();
+          const newCursorPos = (mentionMatch.index || 0) + username.length + 2;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
+      }
+
+      setShowMentions(false);
+    },
+    [text, onTextChange]
+  );
 
   const insertEmoji = (emoji: string) => {
     if (!descriptionTextareaRef.current) return;
@@ -325,9 +434,31 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
           data-field="description"
           value={text}
           onChange={handleTextareaChange}
+          onKeyDown={(e) => {
+            if (showMentions && filteredMentions.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSelectedMentionIndex((prev) =>
+                  prev < filteredMentions.length - 1 ? prev + 1 : prev
+                );
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSelectedMentionIndex((prev) => (prev > 0 ? prev - 1 : 0));
+              } else if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                const selectedUser = filteredMentions[selectedMentionIndex];
+                if (selectedUser) {
+                  insertMention(selectedUser);
+                }
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setShowMentions(false);
+              }
+            }
+          }}
           className="w-full bg-black bg-opacity-30 text-white p-3 pb-10 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
           rows={4}
-          placeholder="Task description"
+          placeholder="Task description (type @ to mention users)"
           style={{ fontSize: "0.875rem", minHeight: "120px" }}
           ref={descriptionTextareaRef}
         />
@@ -341,13 +472,49 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
           😊
         </button>
 
+        {/* Mentions Dropdown - VISIBLE EN PANTALLA */}
+        {showMentions && filteredMentions.length > 0 && (
+          <div
+            ref={mentionsRef}
+            className="absolute bg-black bg-opacity-95 backdrop-blur-sm border-2 border-purple-400 rounded-lg shadow-2xl max-h-48 overflow-y-auto"
+            style={{
+              bottom: "calc(100% + 8px)", // Aparece ARRIBA del textarea
+              left: "0",
+              right: "0",
+              minWidth: "220px",
+              maxWidth: "100%",
+              zIndex: 9999, // Por encima de todo
+            }}
+          >
+            <div className="px-2 py-1 text-xs text-purple-300 border-b border-purple-400/30 bg-purple-900/30">
+              💬 Mention user ({filteredMentions.length})
+            </div>
+            {filteredMentions.map((user, index) => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => insertMention(user)}
+                className={`w-full text-left px-3 py-2.5 hover:bg-purple-500/40 transition-colors border-b border-purple-400/10 last:border-b-0 ${
+                  index === selectedMentionIndex ? "bg-purple-500/40" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-400 font-bold text-lg">@</span>
+                  <span className="text-white text-sm font-medium">
+                    {user.username || user.email}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
         {showEmojiPicker && (
           <div
             ref={emojiPickerRef}
             className="absolute bottom-12 right-0 bg-black bg-opacity-90 backdrop-blur-sm border border-purple-400 rounded-lg p-2 shadow-lg z-50"
             style={{ width: "280px", maxHeight: "240px" }}
           >
-            {/* Flecha arriba */}
             <button
               type="button"
               onClick={() => {
@@ -376,7 +543,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
               </svg>
             </button>
 
-            {/* Contenedor de emojis con scroll */}
             <div
               ref={emojiScrollRef}
               className="grid grid-cols-8 gap-2 overflow-y-auto max-h-44 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent"
@@ -398,7 +564,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
               ))}
             </div>
 
-            {/* Flecha abajo */}
             <button
               type="button"
               onClick={() => {
@@ -433,7 +598,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {images.map((image, index) => {
-            // Check if it's a URL (uploadthing) or base64 (legacy)
             const isUrl =
               image.startsWith("http://") || image.startsWith("https://");
             const isGif =

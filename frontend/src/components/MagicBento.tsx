@@ -58,9 +58,22 @@ export interface BentoProps {
   ) => void;
   onReorder?: (draggedEventId: string, targetEventId: string) => void;
   onLikeToggle?: (id: string, liked: boolean) => void;
-  addTask?: (status?: string | "planned" | "upcoming" | "happened") => void;
-  currentFilter?: "all" | "planned" | "upcoming" | "happened" | "liked";
+  addTask?: (
+    status?: string | "planned" | "upcoming" | "happened" | "private"
+  ) => void;
+  currentFilter?:
+    | "all"
+    | "planned"
+    | "upcoming"
+    | "happened"
+    | "private"
+    | "liked"
+    | "friends";
   isFollowing?: boolean;
+  isReadOnly?: boolean;
+  onCopyEvent?: (event: Event) => void;
+  copiedEventIds?: Set<string>;
+  copyingEventId?: string | null;
 }
 
 const useMobileDetection = () => {
@@ -100,6 +113,10 @@ const MagicBento: React.FC<BentoProps> = ({
   addTask,
   currentFilter = "all",
   isFollowing = true,
+  isReadOnly = false,
+  onCopyEvent,
+  copiedEventIds,
+  copyingEventId,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
@@ -170,6 +187,9 @@ const MagicBento: React.FC<BentoProps> = ({
   }, [tasks, editingId]); // Re-run when tasks or editing state changes
 
   const handleEditStart = (event: Event) => {
+    if (isReadOnly) return; // Prevent editing in read-only mode
+    // Prevent editing events shared from other users
+    if (event.sharedFromUserId != null) return;
     setEditingId(event.id);
     if (event.title) {
       setEditTitle(event.title);
@@ -277,7 +297,9 @@ const MagicBento: React.FC<BentoProps> = ({
 
   const handleStatusClick = (event: Event) => {
     if (!onStatusChange) return;
-    const statuses: string[] = ["planned", "upcoming", "happened"];
+    // Prevent changing status of events shared from other users
+    if (event.sharedFromUserId != null) return;
+    const statuses: string[] = ["planned", "upcoming", "happened", "private"];
     const currentIndex = statuses.indexOf(event.status);
     const nextIndex = (currentIndex + 1) % statuses.length;
     const nextStatus = statuses[nextIndex];
@@ -340,13 +362,20 @@ const MagicBento: React.FC<BentoProps> = ({
       isDragOver ? "ring-4 ring-purple-400 ring-opacity-50" : ""
     }`;
 
-    const eventColor = getStatusColor(event.status);
+    // Check if event is shared from a friend
+    const isSharedEvent =
+      event.sharedFromUserId != null &&
+      event.sharedFromUserId !== undefined &&
+      event.sharedFromUserId !== "";
+    const statusToUse = isSharedEvent ? "friends" : event.status;
+
+    const eventColor = getStatusColor(statusToUse);
     const cardProps = {
       className: baseClassName,
       style: {
         background: eventColor,
-        borderColor: getStatusBorderColor(event.status),
-        boxShadow: getStatusShadow(event.status),
+        borderColor: getStatusBorderColor(statusToUse),
+        boxShadow: getStatusShadow(statusToUse),
         "--glow-color": glowColor,
         cursor: onReorder && editingId !== event.id ? "grab" : "default",
       } as React.CSSProperties,
@@ -365,6 +394,7 @@ const MagicBento: React.FC<BentoProps> = ({
         : {};
 
     const handleHeaderKeyDown = (e: React.KeyboardEvent, event: Event) => {
+      if (isReadOnly) return; // Prevent editing in read-only mode
       if (onEdit && editingId !== event.id && editingId === null) {
         const isTyping =
           e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -438,6 +468,10 @@ const MagicBento: React.FC<BentoProps> = ({
       onHeaderKeyDown: (e: React.KeyboardEvent, event: Event) => void;
       onDelete?: (id: string) => void;
       onLikeToggle?: (event: Event) => void;
+      isReadOnly?: boolean;
+      onCopyEvent?: (event: Event) => void;
+      copiedEventIds?: Set<string>;
+      copyingEventId?: string | null;
     } = {
       task: event,
       editingId,
@@ -460,6 +494,10 @@ const MagicBento: React.FC<BentoProps> = ({
       onStatusClick: handleStatusClick,
       onImageClick: setExpandedImage,
       onHeaderKeyDown: handleHeaderKeyDown,
+      isReadOnly,
+      ...(onCopyEvent ? { onCopyEvent } : {}),
+      ...(copiedEventIds ? { copiedEventIds } : {}),
+      ...(copyingEventId !== undefined ? { copyingEventId } : {}),
     };
 
     if (onDelete) {
@@ -532,42 +570,46 @@ const MagicBento: React.FC<BentoProps> = ({
           <div className="magic-bento-card col-span-full text-center p-8 opacity-50">
             <p>
               No events yet.{" "}
-              {addTask && currentFilter !== "liked" && (
-                <button
-                  onClick={() => {
-                    const status =
-                      currentFilter === "all" ? "planned" : currentFilter;
-                    addTask(status as "planned" | "upcoming" | "happened");
-                  }}
-                  className="text-purple-400 hover:text-purple-300 underline ml-2"
-                >
-                  Add one!
-                </button>
-              )}
+              {addTask &&
+                currentFilter !== "liked" &&
+                currentFilter !== "friends" && (
+                  <button
+                    onClick={() => {
+                      const status =
+                        currentFilter === "all" ? "planned" : currentFilter;
+                      addTask(status as "planned" | "upcoming" | "happened");
+                    }}
+                    className="text-purple-400 hover:text-purple-300 underline ml-2"
+                  >
+                    Add one!
+                  </button>
+                )}
             </p>
           </div>
         ) : null}
-        {addTask && currentFilter !== "liked" && (
-          <div
-            className="magic-bento-card add-new-task-card cursor-pointer flex items-center justify-center hover:opacity-80 transition-opacity border-2 border-dashed border-purple-400"
-            onClick={() => {
-              const status =
-                currentFilter === "all" ? "planned" : currentFilter;
-              addTask(status as "planned" | "upcoming" | "happened");
-            }}
-            style={
-              {
-                backgroundColor: "#060010",
-                "--glow-color": glowColor,
-              } as React.CSSProperties
-            }
-          >
-            <div className="text-center">
-              <div className="text-4xl mb-2">+</div>
-              <div className="magic-bento-card__title">Add New Event</div>
+        {addTask &&
+          currentFilter !== "liked" &&
+          currentFilter !== "friends" && (
+            <div
+              className="magic-bento-card add-new-task-card cursor-pointer flex items-center justify-center hover:opacity-80 transition-opacity border-2 border-dashed border-purple-400"
+              onClick={() => {
+                const status =
+                  currentFilter === "all" ? "planned" : currentFilter;
+                addTask(status as "planned" | "upcoming" | "happened");
+              }}
+              style={
+                {
+                  backgroundColor: "#060010",
+                  "--glow-color": glowColor,
+                } as React.CSSProperties
+              }
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-2">+</div>
+                <div className="magic-bento-card__title">Add New Event</div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </BentoCardGrid>
     </>
   );

@@ -1,9 +1,10 @@
-export const APP_NAME = "EventSync";
+export const APP_NAME = "Gobento";
 
 export const EVENT_STATUS = {
   PLANNED: "planned",
   UPCOMING: "upcoming",
   HAPPENED: "happened",
+  PRIVATE: "private",
 } as const;
 
 export const EVENT_FILTER = {
@@ -11,6 +12,7 @@ export const EVENT_FILTER = {
   PLANNED: "planned",
   UPCOMING: "upcoming",
   HAPPENED: "happened",
+  PRIVATE: "private",
   LIKED: "liked",
 } as const;
 
@@ -26,6 +28,7 @@ export const COLOR_CLASSES = [
   "bg-gradient-to-br from-indigo-50/80 to-indigo-100/40 border-indigo-200/60 hover:border-indigo-300 shadow-sm",
   "bg-gradient-to-br from-cyan-50/80 to-cyan-100/40 border-cyan-200/60 hover:border-cyan-300 shadow-sm",
   "bg-gradient-to-br from-violet-50/80 to-violet-100/40 border-violet-200/60 hover:border-violet-300 shadow-sm",
+  "bg-gradient-to-br from-orange-50/80 to-orange-100/40 border-orange-200/60 hover:border-orange-300 shadow-sm",
 ] as const;
 
 export const STORAGE_KEYS = {

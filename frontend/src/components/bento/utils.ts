@@ -17,6 +17,12 @@ export const getStatusColor = (status: string): string => {
     case "happened":
       // Green gradient (completed events)
       return "linear-gradient(135deg, rgba(0, 200, 150, 0.15) 0%, rgba(0, 150, 100, 0.15) 100%)";
+    case "private":
+      // Dark gray/black gradient (private events - only visible to owner)
+      return "linear-gradient(135deg, rgba(50, 50, 50, 0.15) 0%, rgba(30, 30, 30, 0.15) 100%)";
+    case "friends":
+      // Orange/amber gradient (shared events from friends)
+      return "linear-gradient(135deg, rgba(255, 140, 0, 0.15) 0%, rgba(255, 165, 0, 0.15) 100%)";
     default:
       return "linear-gradient(135deg, rgba(100, 100, 100, 0.15) 0%, rgba(60, 60, 60, 0.15) 100%)";
   }
@@ -31,6 +37,10 @@ export const getStatusBorderColor = (status: string): string => {
       return "rgba(0, 150, 255, 0.4)";
     case "happened":
       return "rgba(0, 200, 150, 0.4)";
+    case "private":
+      return "rgba(80, 80, 80, 0.4)";
+    case "friends":
+      return "rgba(255, 140, 0, 0.4)";
     default:
       return "rgba(100, 100, 100, 0.4)";
   }
@@ -44,7 +54,11 @@ export const getStatusLabel = (status: string): string => {
     case "upcoming":
       return "📅 Próximo";
     case "happened":
-      return "✅ Realizado";
+      return "✨ Memories";
+    case "private":
+      return "🔒 Private";
+    case "friends":
+      return "👥 Shared";
     default:
       return status;
   }
@@ -58,7 +72,11 @@ export const getStatusIcon = (status: string): string => {
     case "upcoming":
       return "📅";
     case "happened":
-      return "✅";
+      return "✨";
+    case "private":
+      return "🔒";
+    case "friends":
+      return "👥";
     default:
       return "📌";
   }
@@ -73,6 +91,10 @@ export const getStatusShadow = (status: string): string => {
       return "0 8px 32px rgba(0, 150, 255, 0.15)";
     case "happened":
       return "0 8px 32px rgba(0, 200, 150, 0.15)";
+    case "private":
+      return "0 8px 32px rgba(50, 50, 50, 0.15)";
+    case "friends":
+      return "0 8px 32px rgba(255, 140, 0, 0.15)";
     default:
       return "0 8px 32px rgba(100, 100, 100, 0.15)";
   }

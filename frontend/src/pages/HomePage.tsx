@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { getEvents } from "../utils/storage";
+import { useLocation } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import { getEvents, saveEvents } from "../utils/storage";
 import type { Event } from "../types/tasks/task.types";
 import Header from "../components/Header";
 import TodoList from "../components/TodoList";
@@ -14,6 +16,7 @@ import { useAuth, useApiClient } from "../hooks";
 import { EventsService, UsersService } from "../services";
 import { env } from "../config/env";
 import { UsernameModal } from "../components/ui";
+import { COLOR_CLASSES } from "../config/constants";
 
 interface Profile {
   id: string;
@@ -27,11 +30,18 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth0();
   const { token, isLoading } = useAuth();
   const apiClient = useApiClient();
+  const location = useLocation();
 
   const [search, setSearch] = useState<string>("");
   const [filter, setFilter] = useState<
-    "all" | "planned" | "upcoming" | "happened" | "liked"
-  >("all");
+    | "all"
+    | "planned"
+    | "upcoming"
+    | "happened"
+    | "private"
+    | "liked"
+    | "friends"
+  >((location.state as any)?.filter || "all");
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -128,6 +138,17 @@ export default function HomePage() {
     loadEvents();
   }, [loadEvents]);
 
+  // Update filter if coming from UserProfile with friends filter
+  useEffect(() => {
+    if ((location.state as any)?.filter === "friends") {
+      setFilter("friends");
+      // Reload events to show the newly copied event
+      loadEvents();
+      // Clear the state to avoid keeping it on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, loadEvents]);
+
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
       createUser();
@@ -212,6 +233,74 @@ export default function HomePage() {
     [token, usersService]
   );
 
+  const getRandomColorClass = (): string => {
+    const index = Math.floor(Math.random() * COLOR_CLASSES.length);
+    return COLOR_CLASSES[index] || COLOR_CLASSES[0];
+  };
+
+  const handleAddEvent = useCallback(
+    async (status?: "planned" | "upcoming" | "happened" | "private") => {
+      const eventStatus = status || "planned";
+      const newEvent: Event = {
+        id: uuidv4(),
+        status: eventStatus,
+        text: "",
+        title: null,
+        address: null,
+        dueDate: null,
+        startTime: null,
+        colorClass: getRandomColorClass(),
+        images: [],
+        liked: false,
+      };
+
+      setEvents((prev) => [newEvent, ...prev]);
+
+      if (!isAuthenticated) {
+        const existingEvents = getEvents();
+        const eventForStorage: Event = {
+          id: newEvent.id,
+          status: newEvent.status,
+          colorClass: newEvent.colorClass,
+          title: newEvent.title ?? null,
+          text: newEvent.text ?? null,
+          dueDate: newEvent.dueDate ?? null,
+          startTime: newEvent.startTime ?? null,
+          address: newEvent.address ?? null,
+          images: newEvent.images || [],
+          liked: newEvent.liked || false,
+        };
+        saveEvents([eventForStorage, ...existingEvents]);
+        return;
+      }
+
+      try {
+        if (!token) {
+          throw new Error("No authentication token available");
+        }
+
+        const eventData = {
+          id: newEvent.id,
+          status: newEvent.status,
+          text: newEvent.text || null,
+          title: newEvent.title || null,
+          colorClass: newEvent.colorClass,
+          address: newEvent.address || null,
+          dueDate: newEvent.dueDate || null,
+          startTime: newEvent.startTime || null,
+          image_url: null,
+        };
+
+        await eventsService.createEvent(eventData);
+      } catch (error) {
+        setEvents((prev) => prev.filter((event) => event.id !== newEvent.id));
+        console.error("❌ Error creating event:", error);
+        alert("Oops! Something went wrong creating your event 😕");
+      }
+    },
+    [isAuthenticated, token, eventsService]
+  );
+
   if (isLoading) {
     return (
       <div
@@ -264,7 +353,7 @@ export default function HomePage() {
                   📋
                 </div>
 
-                <h1 className="text-white font-bold text-xl">EventSync</h1>
+                <h1 className="text-white font-bold text-xl">Gobento</h1>
                 <div className="ml-4 hidden sm:block w-64">
                   <Search search={search} setSearch={setSearch} />
                 </div>
@@ -286,8 +375,29 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="mb-6">
+              <div className="mb-6 flex items-center gap-3 flex-wrap justify-center sm:justify-between">
                 <EventFilter filter={filter} setFilter={setFilter} />
+                <button
+                  onClick={() => {
+                    const status =
+                      filter === "all" ||
+                      filter === "liked" ||
+                      filter === "friends"
+                        ? "planned"
+                        : filter;
+                    handleAddEvent(
+                      status as "planned" | "upcoming" | "happened" | "private"
+                    );
+                  }}
+                  className="px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl text-lg sm:text-base font-bold transition-all duration-300 transform hover:scale-110 active:scale-95 whitespace-nowrap flex items-center gap-2 border-2 border-dashed border-purple-400 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white hover:from-purple-500/50 hover:to-pink-500/50 hover:border-purple-300 backdrop-blur-sm shadow-lg shadow-purple-500/20"
+                  style={{
+                    backgroundColor: "#060010",
+                  }}
+                  title="Add New Event"
+                >
+                  <span className="text-2xl sm:text-xl flex-shrink-0">+</span>
+                  <span>Add Event</span>
+                </button>
               </div>
               <TodoList
                 isAuthenticated={isAuthenticated}

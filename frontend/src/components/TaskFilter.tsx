@@ -5,7 +5,9 @@ export type FilterStatus =
   | "planned"
   | "upcoming"
   | "happened"
-  | "liked";
+  | "private"
+  | "liked"
+  | "friends";
 
 interface EventFilterProps {
   filter: FilterStatus;
@@ -49,11 +51,25 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       color: "green",
     },
     {
+      value: "private",
+      label: "Private",
+      icon: "🔒",
+      gradient: "from-gray-600 via-gray-700 to-gray-600",
+      color: "gray",
+    },
+    {
       value: "liked",
       label: "Favorites",
       icon: "❤️",
       gradient: "from-red-500 via-pink-500 to-red-500",
       color: "pink",
+    },
+    {
+      value: "friends",
+      label: "Friends",
+      icon: "👥",
+      gradient: "from-orange-500 via-amber-500 to-orange-500",
+      color: "orange",
     },
   ];
 

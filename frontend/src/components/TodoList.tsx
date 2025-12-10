@@ -12,13 +12,20 @@ interface TodoListProps {
   todos: Event[];
   setTodos: React.Dispatch<React.SetStateAction<Event[]>>;
   search: string;
-  filter: "all" | "planned" | "upcoming" | "happened" | "liked";
+  filter:
+    | "all"
+    | "planned"
+    | "upcoming"
+    | "happened"
+    | "private"
+    | "liked"
+    | "friends";
   token: string | null;
   isAuthenticated: boolean;
   profileOwnerName?: string;
 }
 
-type EventStatus = "planned" | "upcoming" | "happened";
+type EventStatus = "planned" | "upcoming" | "happened" | "private";
 
 const getRandomColorClass = (): string => {
   const index = Math.floor(Math.random() * COLOR_CLASSES.length);
@@ -37,11 +44,53 @@ const filterEventsBySearch = (events: Event[], searchTerm: string): Event[] => {
 
 const filterEventsByStatus = (
   events: Event[],
-  statusFilter: "all" | "planned" | "upcoming" | "happened" | "liked"
+  statusFilter:
+    | "all"
+    | "planned"
+    | "upcoming"
+    | "happened"
+    | "private"
+    | "liked"
+    | "friends"
 ): Event[] => {
   if (statusFilter === "all") return events;
+  if (statusFilter === "private") {
+    return events.filter((event) => event.status === "private");
+  }
   if (statusFilter === "liked") {
     return events.filter((event) => event.liked === true);
+  }
+  if (statusFilter === "friends") {
+    const filtered = events.filter((event) => {
+      // Check both camelCase (from apiClient conversion) and snake_case (direct from API)
+      const sharedFromUserId =
+        event.sharedFromUserId ?? (event as any).shared_from_user_id;
+
+      // Check if the field exists and has a value
+      const hasSharedFrom =
+        sharedFromUserId != null &&
+        sharedFromUserId !== undefined &&
+        sharedFromUserId !== "";
+
+      return hasSharedFrom;
+    });
+
+    console.log(
+      `🔍 Friends filter: Found ${filtered.length} of ${events.length} events shared from friends`
+    );
+    if (filtered.length > 0) {
+      console.log(
+        "Shared events:",
+        filtered.map((e) => ({
+          id: e.id,
+          title: e.title,
+          sharedFromUserId:
+            e.sharedFromUserId ?? (e as any).shared_from_user_id,
+        }))
+      );
+    }
+
+    return filtered;
   }
   return events.filter((event) => event.status === statusFilter);
 };
@@ -62,6 +111,8 @@ const normalizeEventForStorage = (event: Event): Event => {
       event.address && event.address.trim() ? event.address.trim() : null,
     images: Array.isArray(event.images) ? event.images : [],
     liked: Boolean(event.liked),
+    sharedFromUserId: event.sharedFromUserId || null,
+    position: event.position !== undefined ? event.position : null,
   };
 };
 
@@ -341,7 +392,7 @@ const useEventOperations = (
   );
 
   const reorderEvents = useCallback(
-    (draggedEventId: string, targetEventId: string) => {
+    async (draggedEventId: string, targetEventId: string) => {
       const draggedEvent = todos.find((e) => e.id === draggedEventId);
       const targetEvent = todos.find((e) => e.id === targetEventId);
 
@@ -358,14 +409,74 @@ const useEventOperations = (
       newEvents.splice(draggedIndex, 1);
       newEvents.splice(targetIndex, 0, draggedEvent);
 
-      setTodos(newEvents);
+      // Update positions based on new order
+      const eventsWithPositions = newEvents.map((event, index) => ({
+        ...event,
+        position: index,
+      }));
+
+      setTodos(eventsWithPositions);
 
       if (!isAuthenticated) {
-        const normalizedEvents = newEvents.map(normalizeEventForStorage);
+        const normalizedEvents = eventsWithPositions.map(
+          normalizeEventForStorage
+        );
         saveEvents(normalizedEvents);
+        return;
+      }
+
+      // Update positions in backend
+      try {
+        if (!token) {
+          throw new Error("No authentication token available");
+        }
+
+        // Only update events that changed position
+        const eventsToUpdate = eventsWithPositions.filter((event, index) => {
+          const oldEvent = previousTodos.find((e) => e.id === event.id);
+          return !oldEvent || oldEvent.position !== index;
+        });
+
+        if (eventsToUpdate.length > 0) {
+          // Update only events that changed position
+          const updatePromises = eventsToUpdate.map((event, newIndex) => {
+            const actualIndex = eventsWithPositions.findIndex(
+              (e) => e.id === event.id
+            );
+            return fetch(`${API_URL}/events/${event.id}`, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                title: event.title,
+                text: event.text,
+                status: event.status,
+                dueDate: event.dueDate,
+                startTime: event.startTime,
+                address: event.address,
+                images: event.images,
+                liked: event.liked,
+                image_url: event.image_url,
+                position: actualIndex,
+              }),
+            });
+          });
+
+          await Promise.all(updatePromises);
+          console.log(
+            `✅ Updated positions for ${eventsToUpdate.length} events`
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error updating event positions:", error);
+        // Revert to previous state on error
+        setTodos(previousTodos);
+        handleError("updating positions", error);
       }
     },
-    [todos, isAuthenticated, setTodos]
+    [todos, isAuthenticated, token, setTodos, handleError]
   );
 
   const toggleLike = useCallback(

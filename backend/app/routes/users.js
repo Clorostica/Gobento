@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET - Obtener usuario específico
+// GET - Obtener usuario específico (usuario actual)
 router.get("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
@@ -43,5 +43,28 @@ router.post("/", authenticate, async (req, res) => {
   }
 });
 
-export default router;
+// GET - Obtener información básica de un usuario por ID
+router.get("/:userId", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
+  try {
+    const { userId } = req.params;
+
+    // Only select columns that exist in the users table
+    const result = await pool.query(
+      "SELECT id, email, username FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+export default router;

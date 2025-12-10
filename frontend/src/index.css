@@ -17,5 +17,24 @@ body,
 
 body {
   font-family: 'Poppins', sans-serif;
-  background: transparent;
+}
+.button-primary {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: #6366f1;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button-primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.button-primary:active {
+  transform: translateY(0);
 }

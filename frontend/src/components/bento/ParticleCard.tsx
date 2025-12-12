@@ -276,7 +276,7 @@ const ParticleCard: React.FC<ParticleCardProps> = ({
     <div
       ref={cardRef}
       className={className}
-      style={{ ...style, position: "relative", overflow: "hidden" }}
+      style={{ ...style, position: "relative", overflow: "visible" }}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}

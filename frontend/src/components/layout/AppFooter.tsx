@@ -1,7 +1,3 @@
-/**
- * Reusable application footer component
- */
-
 import React from "react";
 
 export const AppFooter: React.FC = () => {
@@ -21,4 +17,3 @@ export const AppFooter: React.FC = () => {
     </footer>
   );
 };
-

@@ -40,7 +40,7 @@ export interface BentoProps {
   glowColor?: string;
   clickEffect?: boolean;
   enableMagnetism?: boolean;
-  // Event management props
+
   tasks?: Event[];
   onEdit?: (
     id: string,
@@ -132,8 +132,6 @@ const MagicBento: React.FC<BentoProps> = ({
   const [dragOverEventId, setDragOverEventId] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
-  // Equalize card heights - make all cards the same fixed height
-  // But skip when editing to prevent interference with textarea resizing
   useEffect(() => {
     // Don't run if currently editing a task
     if (editingId !== null) return;
@@ -152,7 +150,6 @@ const MagicBento: React.FC<BentoProps> = ({
       const isMobileView = window.innerWidth <= 599;
       const fixedHeight = isMobileView ? 400 : 500;
 
-      // Apply fixed height to cards, but allow cards with images to expand
       cards.forEach((card) => {
         // Check if this card has images by looking for img elements
         const hasImages = card.querySelector("img") !== null;

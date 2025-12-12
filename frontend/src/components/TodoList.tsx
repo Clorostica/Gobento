@@ -72,6 +72,18 @@ const filterEventsByStatus = (
         sharedFromUserId !== undefined &&
         sharedFromUserId !== "";
 
+      // Debug logging
+      if (!hasSharedFrom) {
+        console.log("🔍 Event NOT in friends filter:", {
+          id: event.id,
+          title: event.title,
+          status: event.status,
+          sharedFromUserId: event.sharedFromUserId,
+          shared_from_user_id: (event as any).shared_from_user_id,
+          allKeys: Object.keys(event),
+        });
+      }
+
       return hasSharedFrom;
     });
 
@@ -80,10 +92,11 @@ const filterEventsByStatus = (
     );
     if (filtered.length > 0) {
       console.log(
-        "Shared events:",
+        "✅ Shared events found:",
         filtered.map((e) => ({
           id: e.id,
           title: e.title,
+          status: e.status,
           sharedFromUserId:
             e.sharedFromUserId ?? (e as any).shared_from_user_id,
         }))

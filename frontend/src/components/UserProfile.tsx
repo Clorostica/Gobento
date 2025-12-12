@@ -191,17 +191,51 @@ export default function UserProfile() {
       // Los "followers" del backend son los usuarios que siguen a este usuario
       setFriends(profileData.followers || []);
 
-      // Load copied event IDs from backend to maintain state
-      if (
-        profileData.copiedEventIds &&
-        Array.isArray(profileData.copiedEventIds)
-      ) {
-        setCopiedEventIds(new Set(profileData.copiedEventIds));
-        console.log(
-          "✅ Copied events loaded from backend:",
-          profileData.copiedEventIds.length
-        );
-      } else {
+      // Check which events from this profile are already in the user's events
+      // by fetching user's events and comparing them
+      try {
+        const userEventsRes = await fetch(`${API_URL}/events`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        if (userEventsRes.ok) {
+          const userEventsData = await userEventsRes.json();
+          const userEvents = userEventsData.events || [];
+
+          // Find events in user's list that are shared from this profile's user
+          const copiedEventIdsSet = new Set<string>();
+
+          convertedEvents.forEach((profileEvent: Event) => {
+            // Use original_event_id to directly match events
+            const matchingEvent = userEvents.find((userEvent: any) => {
+              const originalEventId =
+                userEvent.original_event_id || userEvent.originalEventId;
+              return originalEventId === profileEvent.id;
+            });
+
+            if (matchingEvent) {
+              copiedEventIdsSet.add(profileEvent.id);
+              console.log("✅ Found copied event by original_event_id:", {
+                profileEventId: profileEvent.id,
+                copiedEventId: matchingEvent.id,
+                originalEventId:
+                  matchingEvent.original_event_id ||
+                  matchingEvent.originalEventId,
+              });
+            }
+          });
+
+          setCopiedEventIds(copiedEventIdsSet);
+          console.log(
+            `✅ Found ${copiedEventIdsSet.size} events already copied from this user:`,
+            Array.from(copiedEventIdsSet)
+          );
+        } else {
+          // If we can't fetch user events, use empty set
+          setCopiedEventIds(new Set());
+        }
+      } catch (error) {
+        console.error("Error checking copied events:", error);
         setCopiedEventIds(new Set());
       }
 
@@ -358,16 +392,36 @@ export default function UserProfile() {
             throw new Error("Failed to fetch events");
           }
 
-          const { events: userEvents } = await eventsRes.json();
+          const responseData = await eventsRes.json();
+          const userEvents = responseData.events || [];
 
-          // Find the copied event by matching title, text, dueDate and sharedFromUserId
-          const copiedEvent = userEvents.find(
-            (e: any) =>
-              e.shared_from_user_id === userId &&
-              e.title === (event.title || null) &&
-              e.text === (event.text || null) &&
-              e.due_date === (event.dueDate || null)
-          );
+          console.log("📥 Fetched user events:", {
+            count: userEvents.length,
+            events: userEvents.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              shared_from_user_id: e.shared_from_user_id,
+              sharedFromUserId: e.sharedFromUserId,
+            })),
+          });
+
+          // Find the copied event by original_event_id (much simpler and more reliable)
+          const copiedEvent = userEvents.find((e: any) => {
+            const originalEventId = e.original_event_id || e.originalEventId;
+            return originalEventId === event.id;
+          });
+
+          console.log("🔍 Looking for copied event by original_event_id:", {
+            originalEventId: event.id,
+            foundEvent: copiedEvent
+              ? {
+                  id: copiedEvent.id,
+                  original_event_id:
+                    copiedEvent.original_event_id ||
+                    copiedEvent.originalEventId,
+                }
+              : null,
+          });
 
           if (copiedEvent) {
             // Delete the copied event
@@ -384,13 +438,24 @@ export default function UserProfile() {
             }
 
             console.log("✅ Event removed successfully");
-            // Remove from copied state
-            setCopiedEventIds((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(event.id);
-              return newSet;
-            });
+          } else {
+            console.warn(
+              "⚠️ Copied event not found, but removing from copied state anyway"
+            );
           }
+
+          // Always remove from copied state, even if event wasn't found
+          // This ensures the button goes back to "+" state
+          setCopiedEventIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(event.id);
+            console.log("🔄 Updated copiedEventIds:", {
+              removedId: event.id,
+              newSize: newSet.size,
+              hasId: newSet.has(event.id),
+            });
+            return newSet;
+          });
         } catch (error) {
           console.error("❌ Error removing event:", error);
           alert(
@@ -404,10 +469,61 @@ export default function UserProfile() {
         return;
       }
 
-      // Set copying state
+      // Check if already in copied state (prevent duplicate clicks)
+      if (copiedEventIds.has(event.id)) {
+        console.log("⚠️ Event already marked as copied, skipping");
+        setCopyingEventId(null);
+        return;
+      }
+
+      // Set copying state immediately to prevent duplicate clicks
       setCopyingEventId(event.id);
 
+      // Optimistically update state to prevent duplicate clicks
+      // We'll revert if the operation fails
+      setCopiedEventIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(event.id);
+        console.log("🔄 Optimistically updated copiedEventIds:", {
+          eventId: event.id,
+          newSize: newSet.size,
+        });
+        return newSet;
+      });
+
       try {
+        // First, check if this event already exists in user's events
+        // to prevent duplicates
+        const eventsRes = await fetch(`${API_URL}/events`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!eventsRes.ok) {
+          throw new Error("Failed to fetch events");
+        }
+
+        const responseData = await eventsRes.json();
+        const userEvents = responseData.events || [];
+
+        // Check if event already exists by original_event_id
+        const existingEvent = userEvents.find((e: any) => {
+          const originalEventId = e.original_event_id || e.originalEventId;
+          return originalEventId === event.id;
+        });
+
+        if (existingEvent) {
+          console.log("⚠️ Event already exists by original_event_id:", {
+            originalEventId: event.id,
+            existingEventId: existingEvent.id,
+            original_event_id:
+              existingEvent.original_event_id || existingEvent.originalEventId,
+          });
+          // Event already exists, just mark it as copied in the UI
+          setCopiedEventIds((prev) => new Set(prev).add(event.id));
+          setCopyingEventId(null);
+          return;
+        }
+
         // Generate new ID for the copied event
         const newEventId = uuidv4();
 
@@ -425,6 +541,7 @@ export default function UserProfile() {
 
         // Prepare event data for API
         // Mark as shared from the user whose profile we're viewing
+        // Store the original event ID to track which event was copied
         const eventData = {
           id: newEventId,
           status: event.status || "planned",
@@ -436,9 +553,14 @@ export default function UserProfile() {
           startTime: event.startTime || null,
           image_url: firstImageUrl,
           sharedFromUserId: userId || null, // Mark as shared from this user
+          originalEventId: event.id, // Store the original event ID
         };
 
-        console.log("📋 Copying event:", eventData);
+        console.log("📋 Copying event:", {
+          eventId: eventData.id,
+          originalEventId: eventData.originalEventId,
+          sharedFromUserId: eventData.sharedFromUserId,
+        });
 
         const response = await fetch(`${API_URL}/events`, {
           method: "POST",
@@ -458,10 +580,22 @@ export default function UserProfile() {
         const createdEvent = await response.json();
         console.log("✅ Event copied successfully:", createdEvent);
 
-        // Mark as copied in the UI
-        setCopiedEventIds((prev) => new Set(prev).add(event.id));
+        // State is already updated optimistically, just clear copying state
+        console.log("✅ Event created, state already updated optimistically");
       } catch (error) {
         console.error("❌ Error copying event:", error);
+
+        // Revert optimistic update on error
+        setCopiedEventIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(event.id);
+          console.log("🔄 Reverted copiedEventIds due to error:", {
+            eventId: event.id,
+            newSize: newSet.size,
+          });
+          return newSet;
+        });
+
         alert(
           error instanceof Error
             ? error.message

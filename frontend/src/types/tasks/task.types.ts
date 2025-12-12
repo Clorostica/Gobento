@@ -12,6 +12,7 @@ export type Event = {
   position?: number | null; // Event position/order in the list
   image_url?: string | null; // Single image URL from uploadthing
   sharedFromUserId?: string | null; // ID of user who shared this event (if copied from another user)
+  originalEventId?: string | null; // ID of the original event that was copied (for tracking copied events)
 };
 
 // Keep Task as alias for backward compatibility during migration

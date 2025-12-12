@@ -38,9 +38,24 @@ router.get("/", authenticate, async (req, res) => {
       params.push(status.toString());
     }
 
-    query += " ORDER BY id DESC";
+    query += " ORDER BY position DESC NULLS LAST, id DESC";
 
     const result = await pool.query(query, params);
+
+    // Debug: log events with shared_from_user_id
+    const eventsWithShared = result.rows.filter(
+      (e) => e.shared_from_user_id != null
+    );
+    if (eventsWithShared.length > 0) {
+      console.log(
+        `📊 GET /events: Found ${eventsWithShared.length} events with shared_from_user_id:`,
+        eventsWithShared.map((e) => ({
+          id: e.id,
+          title: e.title,
+          shared_from_user_id: e.shared_from_user_id,
+        }))
+      );
+    }
 
     res.json({ events: result.rows, total: result.rows.length });
   } catch (err) {
@@ -99,7 +114,7 @@ router.get("/user/:userId", authenticate, async (req, res) => {
 
     // Get user's events
     const result = await pool.query(
-      "SELECT * FROM task_list WHERE user_id = $1 ORDER BY id DESC",
+      "SELECT * FROM task_list WHERE user_id = $1 ORDER BY position DESC NULLS LAST, id DESC",
       [userId]
     );
 
@@ -158,6 +173,10 @@ router.post("/", authenticate, async (req, res) => {
       dueDate,
       startTime,
       image_url,
+      sharedFromUserId,
+      shared_from_user_id,
+      originalEventId,
+      original_event_id,
     } = req.body;
 
     console.log("📝 Creating event:", {
@@ -167,6 +186,9 @@ router.post("/", authenticate, async (req, res) => {
       address,
       dueDate,
       startTime,
+      sharedFromUserId,
+      shared_from_user_id,
+      body: req.body,
     });
 
     if (!userId || !status) {
@@ -185,8 +207,40 @@ router.post("/", authenticate, async (req, res) => {
     // Validate date before saving
     const cleanedDueDate = validateDate(dueDate);
 
+    // Handle shared_from_user_id (support both camelCase and snake_case)
+    const sharedFromUserIdValue =
+      sharedFromUserId || shared_from_user_id || null;
+
+    // Handle original_event_id (support both camelCase and snake_case)
+    const originalEventIdValue = originalEventId || original_event_id || null;
+
+    console.log("🔍 Processing sharedFromUserId:", {
+      sharedFromUserId,
+      shared_from_user_id,
+      sharedFromUserIdValue,
+      originalEventId,
+      original_event_id,
+      originalEventIdValue,
+      willSave: !!sharedFromUserIdValue,
+    });
+
+    // If this is a copied event (has shared_from_user_id), assign a high position to show it first
+    let positionValue = null;
+    if (sharedFromUserIdValue) {
+      // Get the maximum position for this user and add 1, or use a high number
+      const maxPositionResult = await pool.query(
+        "SELECT COALESCE(MAX(position), 0) as max_position FROM task_list WHERE user_id = $1",
+        [userId]
+      );
+      const maxPosition = parseInt(
+        maxPositionResult.rows[0]?.max_position || "0",
+        10
+      );
+      positionValue = maxPosition + 1;
+    }
+
     const result = await pool.query(
-      "INSERT INTO task_list(id, user_id, status, text, title, color_class, address, due_date, start_time, image_url) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
+      "INSERT INTO task_list(id, user_id, status, text, title, color_class, address, due_date, start_time, image_url, shared_from_user_id, original_event_id, position) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *",
       [
         id,
         userId,
@@ -198,11 +252,21 @@ router.post("/", authenticate, async (req, res) => {
         cleanedDueDate,
         startTime || null,
         image_url || null,
+        sharedFromUserIdValue,
+        originalEventIdValue,
+        positionValue,
       ]
     );
 
-    console.log("✅ Event created:", result.rows[0]);
-    res.status(201).json(result.rows[0]);
+    const createdEvent = result.rows[0];
+    console.log("✅ Event created:", {
+      id: createdEvent.id,
+      status: createdEvent.status,
+      shared_from_user_id: createdEvent.shared_from_user_id,
+      position: createdEvent.position,
+      allFields: Object.keys(createdEvent),
+    });
+    res.status(201).json(createdEvent);
   } catch (err) {
     console.error("❌ Error creating event:", err);
     res.status(500).json({ error: "Database error", message: err.message });

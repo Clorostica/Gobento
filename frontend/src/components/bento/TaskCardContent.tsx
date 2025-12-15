@@ -113,7 +113,7 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
 
       {/* Top bar with like, status, and delete buttons */}
       {!isEditing && (
-        <div className="flex justify-end items-center gap-2 mb-4 relative z-20 -mr-4">
+        <div className="flex justify-end items-center gap-2 mb-4 relative z-20">
           {onLikeToggle && (
             <HeartButton
               isLiked={task.liked || false}

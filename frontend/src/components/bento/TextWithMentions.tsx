@@ -27,7 +27,7 @@ const TextWithMentions: React.FC<TextWithMentionsProps> = ({
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      console.warn("User must be authenticated to view profiles");
+      // Silently return - don't show any error
       return;
     }
 
@@ -35,7 +35,6 @@ const TextWithMentions: React.FC<TextWithMentionsProps> = ({
     try {
       const tokenClaims = await getIdTokenClaims();
       if (!tokenClaims) {
-        console.warn("No token available to fetch user");
         setLoadingUsername(null);
         return;
       }
@@ -49,10 +48,12 @@ const TextWithMentions: React.FC<TextWithMentionsProps> = ({
         const userData = await response.json();
         navigate(`/user/${userData.id}`);
       } else {
-        console.warn(`User with username ${username} not found`);
+        // Silently handle - don't show error for invalid mentions
+        // User can type any text with @, it's not an error if it's not a valid user
+        // Just reset loading state
       }
     } catch (error) {
-      console.error("Error fetching user by username:", error);
+      // Silently handle errors - don't show any error messages
     } finally {
       setLoadingUsername(null);
     }
@@ -82,7 +83,7 @@ const TextWithMentions: React.FC<TextWithMentionsProps> = ({
 
       const username = mention.substring(1); // Remove the @
 
-      // Add the clickable mention
+      // Add the clickable mention (will handle invalid users gracefully)
       parts.push(
         <span
           key={`mention-${keyCounter++}`}

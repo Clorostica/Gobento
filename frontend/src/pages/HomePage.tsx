@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { getEvents, saveEvents } from "../utils/storage";
 import type { Event } from "../types/tasks/task.types";
@@ -23,6 +23,7 @@ interface Profile {
   email: string;
   name?: string | null;
   username?: string | null;
+  avatarUrl?: string | null;
   isPrivate: boolean;
 }
 
@@ -31,8 +32,10 @@ export default function HomePage() {
   const { token, isLoading } = useAuth();
   const apiClient = useApiClient();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState<string>("");
+  const [searchType, setSearchType] = useState<"events" | "users">("events");
   const [filter, setFilter] = useState<
     | "all"
     | "planned"
@@ -45,6 +48,8 @@ export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [searchUsers, setSearchUsers] = useState<Profile[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
 
@@ -66,6 +71,10 @@ export default function HomePage() {
           email: existingUser.email,
           name: existingUser.name ?? null,
           username: existingUser.username ?? null,
+          avatarUrl:
+            (existingUser as any).avatar_url ||
+            (existingUser as any).avatarUrl ||
+            null,
           isPrivate: existingUser.isPrivate ?? false,
         });
         // Show username modal if user doesn't have a username
@@ -87,6 +96,8 @@ export default function HomePage() {
           email: newUser.email || user?.email || "",
           name: newUser.name ?? user?.name ?? null,
           username: newUser.username ?? null,
+          avatarUrl:
+            (newUser as any).avatar_url || (newUser as any).avatarUrl || null,
           isPrivate: newUser.isPrivate ?? false,
         });
         // Show username modal for new users without username
@@ -159,6 +170,53 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
+  // Search users when searchType is "users" and there's a search term
+  useEffect(() => {
+    if (searchType !== "users" || !search.trim() || !token) {
+      setSearchUsers([]);
+      setIsSearchingUsers(false);
+      return;
+    }
+
+    const searchUsersDebounced = async () => {
+      setIsSearchingUsers(true);
+      try {
+        const response = await fetch(
+          `${env.API_URL}/users/search?q=${encodeURIComponent(search.trim())}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          // Filter out current user from results
+          const users = (data.users || [])
+            .filter((u: any) => u.id !== user?.sub)
+            .map((u: any) => ({
+              id: u.id,
+              email: u.email,
+              username: u.username || null,
+              name: u.name || null,
+              avatarUrl: u.avatar_url || u.avatarUrl || null,
+              isPrivate: u.isPrivate || false,
+            }));
+          setSearchUsers(users);
+        } else {
+          setSearchUsers([]);
+        }
+      } catch (error) {
+        console.error("Error searching users:", error);
+        setSearchUsers([]);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchUsersDebounced, 300);
+    return () => clearTimeout(timeoutId);
+  }, [search, searchType, token, env.API_URL, user?.sub]);
+
   useEffect(() => {
     if (events.length === 0) return;
 
@@ -183,6 +241,8 @@ export default function HomePage() {
           email: userData.email || user.email || "",
           name: userData.name ?? user.name ?? null,
           username: userData.username ?? null,
+          avatarUrl:
+            (userData as any).avatar_url || (userData as any).avatarUrl || null,
           isPrivate: userData.isPrivate ?? false,
         });
         // Show username modal if user doesn't have a username
@@ -202,18 +262,25 @@ export default function HomePage() {
   }, [isAuthenticated, token, user, loadProfile]);
 
   const handleUsernameSubmit = useCallback(
-    async (username: string) => {
+    async (username: string, avatarUrl?: string | null) => {
       if (!token) return;
 
       setIsUpdatingUsername(true);
       try {
-        const updatedUser = await usersService.updateUsername(username);
+        const updatedUser = await usersService.updateUsername(
+          username,
+          avatarUrl
+        );
         if (updatedUser.id) {
           setProfile((prev) =>
             prev
               ? {
                   ...prev,
                   username: updatedUser.username ?? null,
+                  avatarUrl:
+                    (updatedUser as any).avatar_url ||
+                    (updatedUser as any).avatarUrl ||
+                    null,
                 }
               : null
           );
@@ -347,26 +414,106 @@ export default function HomePage() {
       >
         <header className="sticky top-0 z-50 w-full px-6 py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
           <div className="w-full sm:max-w-7xl sm:mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-5">
-            <div className="flex items-center justify-between mb-2 sm:mb-0">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg text-sm sm:text-base">
-                  📋
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-2 sm:mb-0">
+              {/* Primera línea: Logo, título y botones */}
+              <div className="flex flex-row items-center justify-between w-full sm:w-auto sm:order-1">
+                {/* Logo y título */}
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg text-sm sm:text-base flex-shrink-0">
+                    📋
+                  </div>
+
+                  <h1 className="text-white font-bold text-xl flex-shrink-0">
+                    Gobento
+                  </h1>
+                  <div className="hidden sm:block sm:ml-4">
+                    <Search
+                      search={search}
+                      setSearch={setSearch}
+                      searchType={searchType}
+                      onSearchTypeChange={setSearchType}
+                    />
+                  </div>
                 </div>
 
-                <h1 className="text-white font-bold text-xl">Gobento</h1>
-                <div className="ml-4 hidden sm:block w-64">
-                  <Search search={search} setSearch={setSearch} />
+                {/* Botones de header */}
+                <div className="flex-shrink-0 flex justify-end sm:ml-4">
+                  <Header token={token} API_URL={env.API_URL} />
                 </div>
               </div>
 
-              <div className="flex-shrink-0">
-                <Header token={token} API_URL={env.API_URL} />
+              {/* Buscador en línea completa solo en móviles */}
+              <div className="w-full sm:hidden">
+                <Search
+                  search={search}
+                  setSearch={setSearch}
+                  searchType={searchType}
+                  onSearchTypeChange={setSearchType}
+                />
               </div>
             </div>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-          {isLoadingEvents ? (
+          {/* Show user search results when searching for users */}
+          {searchType === "users" && search.trim() ? (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {isSearchingUsers
+                  ? "Searching users..."
+                  : `Found ${searchUsers.length} user${
+                      searchUsers.length !== 1 ? "s" : ""
+                    }`}
+              </h2>
+              {isSearchingUsers ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin"></div>
+                </div>
+              ) : searchUsers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {searchUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => navigate(`/user/${user.id}`)}
+                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.username || user.email}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-white/20"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {user.username
+                              ? user.username.charAt(0).toUpperCase()
+                              : user.email.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold truncate">
+                            {user.username || user.email}
+                          </p>
+                          {user.username && (
+                            <p className="text-gray-400 text-sm truncate">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20">
+                  <p className="text-gray-400 text-lg">
+                    No users found matching "{search}"
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : isLoadingEvents ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center space-y-4">
                 <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
@@ -403,7 +550,7 @@ export default function HomePage() {
                 isAuthenticated={isAuthenticated}
                 todos={events}
                 setTodos={setEvents}
-                search={search}
+                search={searchType === "events" ? search : ""}
                 filter={filter}
                 token={token}
                 profileOwnerName={

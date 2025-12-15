@@ -15,7 +15,12 @@ interface HeaderProps {
   showConnections?: boolean;
 }
 
-const Header = ({ token, API_URL, userId, showConnections = true }: HeaderProps) => {
+const Header = ({
+  token,
+  API_URL,
+  userId,
+  showConnections = true,
+}: HeaderProps) => {
   const { user, isAuthenticated, logout } = useAuth0<AuthUser>();
   const apiClient = useApiClient();
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
@@ -69,7 +74,7 @@ const Header = ({ token, API_URL, userId, showConnections = true }: HeaderProps)
 
   return (
     <>
-      <div className="flex justify-end items-center gap-1.5 sm:gap-2 md:gap-3 flex-wrap">
+      <div className="flex justify-end items-center gap-4 flex-wrap">
         {isAuthenticated ? (
           <>
             {showConnections && (
@@ -91,7 +96,7 @@ const Header = ({ token, API_URL, userId, showConnections = true }: HeaderProps)
             )}
             {/* Desktop: Full logout button */}
             <div className="hidden sm:block">
-            <Logout />
+              <Logout />
             </div>
             {/* Mobile: Icon-only logout button */}
             <button
@@ -117,7 +122,7 @@ const Header = ({ token, API_URL, userId, showConnections = true }: HeaderProps)
               </svg>
             </button>
             {user && (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-4">
                 {(user.picture || username || user.name) && (
                   <>
                     {user.picture ? (

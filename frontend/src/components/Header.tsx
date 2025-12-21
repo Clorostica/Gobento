@@ -1,3 +1,4 @@
+// Header.tsx
 import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import Logout from "./Logout";
@@ -15,6 +16,9 @@ interface HeaderProps {
   showConnections?: boolean;
 }
 
+const buttonBaseClasses =
+  "flex items-center gap-1.5 sm:gap-2 font-semibold shadow-lg transition-colors duration-300 text-sm sm:text-base px-3 py-2 min-h-[38px]";
+
 const Header = ({
   token,
   API_URL,
@@ -26,6 +30,7 @@ const Header = ({
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
     useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const loadUsername = async () => {
@@ -68,14 +73,14 @@ const Header = ({
 
   return (
     <>
-      <div className="flex justify-between sm:justify-end items-center w-full gap-2 sm:gap-2 md:gap-3">
-        <div className="flex items-center gap-2 md:gap-3 ml-auto sm:ml-0">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center">
           {isAuthenticated ? (
-            <>
+            <div className="flex items-center gap-2 relative">
               {showConnections && (
                 <StarBorder
                   onClick={() => setIsFollowersFollowingPanelOpen(true)}
-                  className="star-border-container font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                  className={`${buttonBaseClasses} star-border-container`}
                   color="#B19EEF"
                   speed="6s"
                   thickness={2}
@@ -89,36 +94,44 @@ const Header = ({
                 </StarBorder>
               )}
 
-              <StarBorder
-                className="star-border-container font-semibold shadow-lg transition-colors duration-300 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base px-2 sm:px-3 py-1.5 sm:py-2"
-                color="#B19EEF"
-                speed="6s"
-                thickness={2}
-                title={displayName || "User profile"}
-              >
-                {user?.picture ? (
-                  <img
-                    src={user.picture}
-                    alt={displayName || "User"}
-                    className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 flex-shrink-0"
-                  />
-                ) : (
-                  <div className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                    {avatarLetter}
+              {/* User Dropdown */}
+              <div className="relative">
+                <StarBorder
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className={`${buttonBaseClasses} star-border-container cursor-pointer`}
+                  color="#B19EEF"
+                  speed="6s"
+                  thickness={2}
+                  title={displayName || "User profile"}
+                >
+                  {user?.picture ? (
+                    <img
+                      src={user.picture}
+                      alt={displayName || "User"}
+                      className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      {avatarLetter}
+                    </div>
+                  )}
+                  {displayName && (
+                    <span className="truncate max-w-[120px]">
+                      {displayName}
+                    </span>
+                  )}
+                </StarBorder>
+
+                {/* Dropdown menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-36 bg-black/90 backdrop-blur-md rounded-lg shadow-lg z-50 flex flex-col">
+                    <Logout />
                   </div>
                 )}
-
-                {displayName && (
-                  <span className="hidden sm:block text-white font-medium text-xs sm:text-sm md:text-base truncate max-w-[80px] md:max-w-[120px] lg:max-w-[150px]">
-                    {displayName}
-                  </span>
-                )}
-              </StarBorder>
-
-              <Logout />
-            </>
+              </div>
+            </div>
           ) : (
-            <Login />
+            <Login className={buttonBaseClasses} />
           )}
         </div>
       </div>

@@ -25,7 +25,7 @@ export default function Search({
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-        <div className="relative flex-1 min-w-0 w-full sm:w-[250px] md:w-[300px] lg:w-[400px]">
+        <div className="relative flex-1 min-w-0 w-full sm:w-[250px] md:w-[300px] lg:w-[320px]">
           <div className="absolute left-2 sm:left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +52,7 @@ export default function Search({
             className="w-full pl-7 sm:pl-9 md:pl-11 pr-3 sm:pr-4 md:pr-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 hover:shadow-md text-sm sm:text-base text-gray-900"
           />
         </div>
-        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 ml-1 sm:ml-2">
+        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
           <StarBorder
             onClick={(e) => {
               e.preventDefault();

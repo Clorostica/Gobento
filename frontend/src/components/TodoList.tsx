@@ -62,17 +62,14 @@ const filterEventsByStatus = (
   }
   if (statusFilter === "friends") {
     const filtered = events.filter((event) => {
-      // Check both camelCase (from apiClient conversion) and snake_case (direct from API)
       const sharedFromUserId =
         event.sharedFromUserId ?? (event as any).shared_from_user_id;
 
-      // Check if the field exists and has a value
       const hasSharedFrom =
         sharedFromUserId != null &&
         sharedFromUserId !== undefined &&
         sharedFromUserId !== "";
 
-      // Debug logging
       if (!hasSharedFrom) {
         console.log("🔍 Event NOT in friends filter:", {
           id: event.id,
@@ -108,7 +105,6 @@ const filterEventsByStatus = (
   return events.filter((event) => event.status === statusFilter);
 };
 
-// Helper function to normalize event data for storage
 const normalizeEventForStorage = (event: Event): Event => {
   return {
     id: event.id,

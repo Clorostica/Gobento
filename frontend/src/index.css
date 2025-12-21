@@ -38,3 +38,22 @@ body {
 .button-primary:active {
   transform: translateY(0);
 }
+
+/* Custom scrollbar styles for emoji picker */
+.emoji-picker-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-thumb {
+  background: #a855f7;
+  border-radius: 4px;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9333ea;
+}

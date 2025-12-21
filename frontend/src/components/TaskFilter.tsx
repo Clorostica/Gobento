@@ -80,13 +80,13 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
           key={f.value}
           onClick={() => setFilter(f.value)}
           className={`
-            px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform
-            hover:scale-105 active:scale-95 whitespace-nowrap flex items-center
+            px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300
+            whitespace-nowrap flex items-center min-w-[fit-content]
             ${
               filter === f.value
                 ? `bg-gradient-to-r ${f.gradient} text-white shadow-lg shadow-${
                     f.color || "purple"
-                  }-500/50 scale-105`
+                  }-500/50 ring-2 ring-white/20`
                 : "bg-black/20 text-white/80 hover:bg-black/30 hover:text-white backdrop-blur-sm"
             }
           `}

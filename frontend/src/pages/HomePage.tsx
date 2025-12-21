@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { getEvents, saveEvents } from "../utils/storage";
 import type { Event } from "../types/tasks/task.types";
@@ -28,7 +28,7 @@ interface Profile {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated } = useAuth0();
+  const { user, isAuthenticated, logout } = useAuth0();
   const { token, isLoading } = useAuth();
   const apiClient = useApiClient();
   const location = useLocation();
@@ -52,6 +52,7 @@ export default function HomePage() {
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isNewlyCreatedUser, setIsNewlyCreatedUser] = useState(false);
 
   const eventsService = useMemo(
     () => new EventsService(apiClient),
@@ -77,10 +78,8 @@ export default function HomePage() {
             null,
           isPrivate: existingUser.isPrivate ?? false,
         });
-        // Show username modal if user doesn't have a username
-        if (!existingUser.username) {
-          setShowUsernameModal(true);
-        }
+        // Don't show modal for existing users
+        setIsNewlyCreatedUser(false);
         return;
       }
     } catch (error) {
@@ -89,7 +88,15 @@ export default function HomePage() {
 
     try {
       // Create new user
-      const newUser = await usersService.createUser();
+      console.log("Creating new user with data:", {
+        email: user?.email,
+        picture: user?.picture,
+      });
+      const newUser = await usersService.createUser({
+        email: user?.email || "",
+        avatarUrl: user?.picture || "",
+      });
+      console.log("User created successfully:", newUser);
       if (newUser.id) {
         setProfile({
           id: newUser.id,
@@ -100,13 +107,18 @@ export default function HomePage() {
             (newUser as any).avatar_url || (newUser as any).avatarUrl || null,
           isPrivate: newUser.isPrivate ?? false,
         });
-        // Show username modal for new users without username
-        if (!newUser.username) {
-          setShowUsernameModal(true);
-        }
+        // Mark as newly created and show modal
+        setIsNewlyCreatedUser(true);
+        setShowUsernameModal(true);
       }
     } catch (error) {
       console.error("❌ Error creating user:", error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      setIsNewlyCreatedUser(false);
     }
   }, [token, usersService, user]);
 
@@ -170,9 +182,9 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
-  // Search users when searchType is "users" and there's a search term
+  // Search users when searchType is "users" (with or without search term)
   useEffect(() => {
-    if (searchType !== "users" || !search.trim() || !token) {
+    if (searchType !== "users" || !token) {
       setSearchUsers([]);
       setIsSearchingUsers(false);
       return;
@@ -181,8 +193,12 @@ export default function HomePage() {
     const searchUsersDebounced = async () => {
       setIsSearchingUsers(true);
       try {
+        // If there's a search term, include it in the query, otherwise send empty string
+        const queryParam = search.trim()
+          ? `?q=${encodeURIComponent(search.trim())}`
+          : "?q=";
         const response = await fetch(
-          `${env.API_URL}/users/search?q=${encodeURIComponent(search.trim())}`,
+          `${env.API_URL}/users/search${queryParam}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -190,7 +206,7 @@ export default function HomePage() {
 
         if (response.ok) {
           const data = await response.json();
-          // Filter out current user from results
+          // Backend already filters out current user, but double-check just in case
           const users = (data.users || [])
             .filter((u: any) => u.id !== user?.sub)
             .map((u: any) => ({
@@ -213,7 +229,7 @@ export default function HomePage() {
       }
     };
 
-    const timeoutId = setTimeout(searchUsersDebounced, 300);
+    const timeoutId = setTimeout(searchUsersDebounced, search.trim() ? 300 : 0);
     return () => clearTimeout(timeoutId);
   }, [search, searchType, token, env.API_URL, user?.sub]);
 
@@ -261,6 +277,9 @@ export default function HomePage() {
     }
   }, [isAuthenticated, token, user, loadProfile]);
 
+  // Only show modal for newly created users
+  // Don't show modal for existing users without username
+
   const handleUsernameSubmit = useCallback(
     async (username: string, avatarUrl?: string | null) => {
       if (!token) return;
@@ -285,6 +304,7 @@ export default function HomePage() {
               : null
           );
           setShowUsernameModal(false);
+          setIsNewlyCreatedUser(false);
         }
       } catch (error: unknown) {
         console.error("❌ Error updating username:", error);
@@ -299,6 +319,25 @@ export default function HomePage() {
     },
     [token, usersService]
   );
+
+  const handleCancelUserCreation = useCallback(async () => {
+    if (!token || !isNewlyCreatedUser) return;
+
+    try {
+      await usersService.deleteUser();
+      setProfile(null);
+      setShowUsernameModal(false);
+      setIsNewlyCreatedUser(false);
+      // Logout the user since we're deleting their account
+      logout({ logoutParams: { returnTo: window.location.origin } });
+    } catch (error) {
+      console.error("❌ Error deleting user:", error);
+      // Even if deletion fails, close the modal and logout
+      setShowUsernameModal(false);
+      setIsNewlyCreatedUser(false);
+      logout({ logoutParams: { returnTo: window.location.origin } });
+    }
+  }, [token, isNewlyCreatedUser, usersService, logout]);
 
   const getRandomColorClass = (): string => {
     const index = Math.floor(Math.random() * COLOR_CLASSES.length);
@@ -412,21 +451,38 @@ export default function HomePage() {
           flexDirection: "column",
         }}
       >
-        <header className="sticky top-0 z-50 w-full px-6 py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
-          <div className="w-full sm:max-w-7xl sm:mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-2 sm:mb-0">
+        <header className="sticky top-0 z-50 w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
+          <div className="w-full sm:max-w-7xl sm:mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-1 sm:py-2 md:py-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-2 sm:mb-0">
               {/* Primera línea: Logo, título y botones */}
-              <div className="flex flex-row items-center justify-between w-full sm:w-auto sm:order-1">
+              <div className="flex flex-row items-center justify-center w-full sm:order-1 gap-1.5 sm:gap-3 md:gap-4 lg:gap-6">
                 {/* Logo y título */}
-                <div className="flex items-center gap-4 flex-shrink-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg text-sm sm:text-base flex-shrink-0">
-                    📋
-                  </div>
+                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                        />
+                      </svg>
+                    </div>
 
-                  <h1 className="text-white font-bold text-xl flex-shrink-0">
-                    Gobento
-                  </h1>
-                  <div className="hidden sm:block sm:ml-4">
+                    <Link to="/" className="no-underline">
+                      <h1 className="text-white font-bold text-base sm:text-lg md:text-xl flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                        Gobento
+                      </h1>
+                    </Link>
+                  </div>
+                  <div className="hidden sm:block sm:ml-2 md:ml-3 lg:ml-4">
                     <Search
                       search={search}
                       setSearch={setSearch}
@@ -437,7 +493,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Botones de header */}
-                <div className="flex-shrink-0 flex justify-end sm:ml-4">
+                <div className="flex-shrink-0">
                   <Header token={token} API_URL={env.API_URL} />
                 </div>
               </div>
@@ -456,14 +512,16 @@ export default function HomePage() {
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
           {/* Show user search results when searching for users */}
-          {searchType === "users" && search.trim() ? (
+          {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">
                 {isSearchingUsers
-                  ? "Searching users..."
-                  : `Found ${searchUsers.length} user${
+                  ? "Loading users..."
+                  : search.trim()
+                  ? `Found ${searchUsers.length} user${
                       searchUsers.length !== 1 ? "s" : ""
-                    }`}
+                    }`
+                  : `All users (${searchUsers.length})`}
               </h2>
               {isSearchingUsers ? (
                 <div className="flex items-center justify-center py-20">
@@ -508,7 +566,9 @@ export default function HomePage() {
               ) : (
                 <div className="text-center py-20">
                   <p className="text-gray-400 text-lg">
-                    No users found matching "{search}"
+                    {search.trim()
+                      ? `No users found matching "${search}"`
+                      : "No users found in the system yet."}
                   </p>
                 </div>
               )}
@@ -598,7 +658,9 @@ export default function HomePage() {
         onClose={() => setShowUsernameModal(false)}
         onSubmit={handleUsernameSubmit}
         isLoading={isUpdatingUsername}
-        canClose={!!profile?.username}
+        canClose={!isNewlyCreatedUser}
+        onCancel={handleCancelUserCreation}
+        isNewlyCreatedUser={isNewlyCreatedUser}
       />
     </div>
   );

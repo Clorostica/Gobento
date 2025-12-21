@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { Task } from "@/types/tasks/task.types";
 import TaskHeader from "./TaskHeader";
 import TaskEditForm from "./TaskEditForm";
@@ -7,7 +7,7 @@ import TaskImageViewer from "./TaskImageViewer";
 import HeartButton from "./HeartButton";
 import FloatingCopyButton from "./FloatingCopyButton";
 import TextWithMentions from "./TextWithMentions";
-import { getStatusIcon, getStatusLabel } from "./utils";
+import { getStatusIcon, getStatusLabel, getStatusLabelText } from "./utils";
 
 interface TaskCardContentProps {
   task: Task;
@@ -30,6 +30,12 @@ interface TaskCardContentProps {
   onEmojiSelect: (emoji: string) => void;
   onDelete?: (id: string) => void;
   onStatusClick: (task: Task) => void;
+  onStatusChange?:
+    | ((
+        id: string,
+        status: string | "planned" | "upcoming" | "happened"
+      ) => void)
+    | undefined;
   onImageClick: (image: string) => void;
   onLikeToggle?: (task: Task) => void;
   onHeaderKeyDown?: (e: React.KeyboardEvent, task: Task) => void;
@@ -60,6 +66,7 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
   onEmojiSelect,
   onDelete,
   onStatusClick,
+  onStatusChange,
   onImageClick,
   onLikeToggle,
   onHeaderKeyDown,
@@ -69,6 +76,28 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
   copyingEventId,
 }) => {
   const isEditing = editingId === task.id;
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  const statuses = ["planned", "upcoming", "happened", "private"];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        statusMenuRef.current &&
+        !statusMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusMenu(false);
+      }
+    };
+
+    if (showStatusMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStatusMenu]);
 
   return (
     <div
@@ -124,18 +153,65 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
             />
           )}
           {!isReadOnly && !task.sharedFromUserId && (
-            <span
-              className="text-lg opacity-60"
-              title={getStatusLabel(task.status)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusClick(task);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              style={{ cursor: "pointer" }}
-            >
-              {getStatusIcon(task.status)}
-            </span>
+            <div className="relative" ref={statusMenuRef}>
+              <span
+                className="text-lg opacity-60 hover:opacity-100 transition-opacity"
+                title={`${getStatusLabel(
+                  task.status
+                )} - Click to cycle, click again to see menu`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // If menu is open, close it and cycle
+                  if (showStatusMenu) {
+                    setShowStatusMenu(false);
+                    onStatusClick(task);
+                  } else {
+                    // If menu is closed, show it
+                    setShowStatusMenu(true);
+                  }
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                style={{ cursor: "pointer" }}
+              >
+                {getStatusIcon(task.status)}
+              </span>
+
+              {showStatusMenu && (
+                <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-md border border-purple-400/30 rounded-lg shadow-xl z-[100] py-1 min-w-[140px] animate-in fade-in zoom-in duration-200">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider border-b border-purple-400/10 mb-1">
+                    Change status
+                  </div>
+                  {statuses.map((status) => (
+                    <button
+                      key={status}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onStatusChange) {
+                          onStatusChange(task.id, status);
+                        } else {
+                          // Fallback to cycling if onStatusChange not provided
+                          onStatusClick(task);
+                        }
+                        setShowStatusMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-purple-400/10 last:border-b-0 ${
+                        task.status === status
+                          ? "text-purple-400 font-semibold bg-white/5"
+                          : "text-white/70"
+                      }`}
+                    >
+                      <span className="text-lg">{getStatusIcon(status)}</span>
+                      <span className="text-xs">
+                        {getStatusLabelText(status)}
+                      </span>
+                      {task.status === status && (
+                        <span className="ml-auto text-[10px]">●</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {!isReadOnly && task.sharedFromUserId && (
             <span

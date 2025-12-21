@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { compressImage } from "../../utils/imageHandler";
 import { uploadMultipleFiles } from "../../utils/uploadthing";
@@ -58,6 +59,11 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const mentionsRef = useRef<HTMLDivElement | null>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [emojiPickerPosition, setEmojiPickerPosition] = useState({
+    bottom: 80,
+    right: 20,
+  });
   const apiClient = useApiClient();
   const { isAuthenticated } = useAuth0();
   const { token } = useAuth();
@@ -185,7 +191,9 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target as Node)
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(event.target as Node)
       ) {
         setShowEmojiPicker(false);
       }
@@ -207,6 +215,42 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showEmojiPicker, showMentions]);
+
+  // Actualizar posición del emoji picker cuando se hace scroll o se redimensiona la ventana
+  useEffect(() => {
+    if (!showEmojiPicker || !emojiButtonRef.current) return;
+
+    const updatePosition = () => {
+      if (emojiButtonRef.current) {
+        const rect = emojiButtonRef.current.getBoundingClientRect();
+        const panelWidth = 320;
+        const panelHeight = 300;
+        const padding = 8;
+
+        let right = window.innerWidth - rect.right;
+        let bottom = window.innerHeight - rect.top + padding;
+
+        if (right + panelWidth > window.innerWidth) {
+          right = window.innerWidth - panelWidth - 20;
+        }
+        if (bottom + panelHeight > window.innerHeight) {
+          bottom = window.innerHeight - panelHeight - 20;
+        }
+        if (right < 0) right = 20;
+        if (bottom < 0) bottom = 20;
+
+        setEmojiPickerPosition({ bottom, right });
+      }
+    };
+
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [showEmojiPicker]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -251,7 +295,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       }, 500);
     } catch (error) {
       console.error("Error uploading images:", error);
-      alert("Error al subir las imágenes. Por favor intenta de nuevo.");
+      alert("Error uploading images. Please try again.");
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -307,15 +351,12 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
     }
   };
 
-  // Filtro más flexible con includes en lugar de startsWith
   const filteredMentions = mentionableUsers.filter((user) => {
     const username = (user.username || user.email || "").toLowerCase();
     const query = mentionQuery.toLowerCase();
 
-    // Si no hay query (solo escribió @), muestra todos
     if (query.length === 0) return true;
 
-    // Busca que contenga el query
     return username.includes(query);
   });
 
@@ -464,26 +505,50 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         />
 
         <button
+          ref={emojiButtonRef}
           type="button"
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          onClick={() => {
+            if (emojiButtonRef.current) {
+              const rect = emojiButtonRef.current.getBoundingClientRect();
+              const panelWidth = 320;
+              const panelHeight = 300;
+              const padding = 8;
+
+              // Calcular posición: arriba del botón, alineado a la derecha
+              let right = window.innerWidth - rect.right;
+              let bottom = window.innerHeight - rect.top + padding;
+
+              // Asegurar que no se salga de la pantalla
+              if (right + panelWidth > window.innerWidth) {
+                right = window.innerWidth - panelWidth - 20;
+              }
+              if (bottom + panelHeight > window.innerHeight) {
+                bottom = window.innerHeight - panelHeight - 20;
+              }
+              if (right < 0) right = 20;
+              if (bottom < 0) bottom = 20;
+
+              setEmojiPickerPosition({ bottom, right });
+            }
+            setShowEmojiPicker(!showEmojiPicker);
+          }}
           className="absolute bottom-2 right-2 hover:bg-opacity-50 text-white p-2 rounded transition-all"
           title="Add emoji"
         >
           😊
         </button>
 
-        {/* Mentions Dropdown - VISIBLE EN PANTALLA */}
         {showMentions && filteredMentions.length > 0 && (
           <div
             ref={mentionsRef}
             className="absolute bg-black bg-opacity-95 backdrop-blur-sm border-2 border-purple-400 rounded-lg shadow-2xl max-h-48 overflow-y-auto"
             style={{
-              bottom: "calc(100% + 8px)", // Aparece ARRIBA del textarea
+              bottom: "calc(100% + 8px)",
               left: "0",
               right: "0",
               minWidth: "220px",
               maxWidth: "100%",
-              zIndex: 9999, // Por encima de todo
+              zIndex: 9999,
             }}
           >
             <div className="px-2 py-1 text-xs text-purple-300 border-b border-purple-400/30 bg-purple-900/30">
@@ -509,90 +574,82 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
           </div>
         )}
 
-        {showEmojiPicker && (
-          <div
-            ref={emojiPickerRef}
-            className="absolute bottom-12 right-0 bg-black bg-opacity-90 backdrop-blur-sm border border-purple-400 rounded-lg p-2 shadow-lg z-50"
-            style={{ width: "280px", maxHeight: "240px" }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                if (emojiScrollRef.current) {
-                  emojiScrollRef.current.scrollBy({
-                    top: -60,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-              className="w-full flex justify-center items-center p-1 mb-1 hover:bg-purple-400 hover:bg-opacity-20 rounded transition-all"
-              title="Scroll up"
-            >
-              <svg
-                className="w-4 h-4 text-purple-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
-            </button>
-
+        {showEmojiPicker &&
+          createPortal(
             <div
-              ref={emojiScrollRef}
-              className="grid grid-cols-8 gap-2 overflow-y-auto max-h-44 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent"
-              style={{ scrollbarWidth: "thin" }}
-            >
-              {emojis.map((emoji, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    insertEmoji(emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                  className="text-2xl hover:bg-purple-400 hover:bg-opacity-20 rounded p-1 transition-all hover:scale-110"
-                  title={emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (emojiScrollRef.current) {
-                  emojiScrollRef.current.scrollBy({
-                    top: 60,
-                    behavior: "smooth",
-                  });
-                }
+              ref={emojiPickerRef}
+              className="fixed bg-black bg-opacity-95 backdrop-blur-md border-2 border-purple-400 rounded-xl shadow-2xl flex flex-col"
+              style={{
+                width: "320px",
+                height: "300px",
+                bottom: `${emojiPickerPosition.bottom}px`,
+                right: `${emojiPickerPosition.right}px`,
+                zIndex: 99999999,
               }}
-              className="w-full flex justify-center items-center p-1 mt-1 hover:bg-purple-400 hover:bg-opacity-20 rounded transition-all"
-              title="Scroll down"
             >
-              <svg
-                className="w-4 h-4 text-purple-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              {/* Header with title and close button */}
+              <div className="flex items-center justify-between p-3 border-b border-purple-400/30 flex-shrink-0">
+                <span className="text-purple-300 font-semibold text-sm flex items-center gap-2">
+                  ✨ Emojis
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(false)}
+                  className="text-gray-400 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-colors"
+                  title="Close"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenedor de scroll vertical */}
+              <div
+                ref={emojiScrollRef}
+                className="emoji-picker-scroll p-2 grid grid-cols-6 gap-1"
+                style={{
+                  flex: "1 1 0%",
+                  minHeight: 0,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#a855f7 transparent",
+                  height: "100%",
+                }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div>
-        )}
+                {emojis.map((emoji, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      insertEmoji(emoji);
+                    }}
+                    className="text-2xl hover:bg-purple-400 hover:bg-opacity-20 rounded p-1 transition-all hover:scale-125"
+                    title={emoji}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
+              {/* Footer opcional para indicar que se puede seguir haciendo click */}
+              <div className="p-2 text-[10px] text-gray-500 text-center border-t border-purple-400/10 flex-shrink-0">
+                Click on an emoji to add it
+              </div>
+            </div>,
+            document.body
+          )}
       </div>
 
       {images.length > 0 && (
@@ -622,7 +679,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
                     handleRemoveImage(index);
                   }}
                   className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  title="Eliminar imagen"
+                  title="Remove image"
                 >
                   ×
                 </button>

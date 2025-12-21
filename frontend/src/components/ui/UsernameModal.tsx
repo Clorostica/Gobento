@@ -8,6 +8,8 @@ interface UsernameModalProps {
   onSubmit: (username: string, avatarUrl?: string | null) => Promise<void>;
   isLoading?: boolean;
   canClose?: boolean; // If false, modal cannot be closed (username is required)
+  onCancel?: () => void; // Function to call when canceling user creation
+  isNewlyCreatedUser?: boolean; // If true, show cancel button
 }
 
 export default function UsernameModal({
@@ -16,6 +18,8 @@ export default function UsernameModal({
   onSubmit,
   isLoading = false,
   canClose = true,
+  onCancel,
+  isNewlyCreatedUser = false,
 }: UsernameModalProps) {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -133,10 +137,12 @@ export default function UsernameModal({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Set Up Your Profile
+              {isNewlyCreatedUser ? "Welcome! Set Up Your Profile" : "Set Up Your Profile"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Choose a username and add your avatar
+              {isNewlyCreatedUser 
+                ? "Add a username and avatar to complete your account setup"
+                : "Choose a username and add your avatar"}
             </p>
           </div>
           {canClose && !isSubmitting && !isLoading && (
@@ -276,10 +282,22 @@ export default function UsernameModal({
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
+            {isNewlyCreatedUser && onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting || isLoading}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               disabled={isSubmitting || isLoading || !username.trim()}
-              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className={`${
+                isNewlyCreatedUser && onCancel ? "flex-1" : "w-full"
+              } bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
             >
               {isSubmitting || isLoading ? (
                 <span className="flex items-center justify-center gap-2">

@@ -461,6 +461,12 @@ const MagicBento: React.FC<BentoProps> = ({
       onImagesChange: (images: string[]) => void;
       onEmojiSelect: (emoji: string) => void;
       onStatusClick: (event: Event) => void;
+      onStatusChange:
+        | ((
+            id: string,
+            status: string | "planned" | "upcoming" | "happened"
+          ) => void)
+        | undefined;
       onImageClick: (image: string) => void;
       onHeaderKeyDown: (e: React.KeyboardEvent, event: Event) => void;
       onDelete?: (id: string) => void;
@@ -489,6 +495,7 @@ const MagicBento: React.FC<BentoProps> = ({
       onImagesChange: setEditImages,
       onEmojiSelect: handleEmojiSelect,
       onStatusClick: handleStatusClick,
+      onStatusChange: onStatusChange,
       onImageClick: setExpandedImage,
       onHeaderKeyDown: handleHeaderKeyDown,
       isReadOnly,

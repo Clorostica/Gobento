@@ -12,8 +12,12 @@ export class UsersService {
     return this.apiClient.get<UserResponse>("/users");
   }
 
-  async createUser(username?: string): Promise<UserResponse> {
-    return this.apiClient.post<UserResponse>("/users", { username });
+  async createUser(data?: {
+    email?: string;
+    avatarUrl?: string;
+    username?: string;
+  }): Promise<UserResponse> {
+    return this.apiClient.post<UserResponse>("/users", data || {});
   }
 
   async updateUsername(
@@ -33,5 +37,9 @@ export class UsersService {
     } catch {
       return false;
     }
+  }
+
+  async deleteUser(): Promise<void> {
+    return this.apiClient.delete<void>("/users");
   }
 }

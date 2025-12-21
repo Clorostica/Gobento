@@ -82,6 +82,24 @@ export const getStatusIcon = (status: string): string => {
   }
 };
 
+// Get status label text without emoji
+export const getStatusLabelText = (status: string): string => {
+  switch (status) {
+    case "planned":
+      return "Idea";
+    case "upcoming":
+      return "Upcoming";
+    case "happened":
+      return "Memories";
+    case "private":
+      return "Private";
+    case "friends":
+      return "Shared";
+    default:
+      return status;
+  }
+};
+
 // Shadow effect for cards based on status
 export const getStatusShadow = (status: string): string => {
   switch (status) {

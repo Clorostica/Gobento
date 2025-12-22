@@ -1,13 +1,20 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import StarBorder from "./StarBorder";
 
-const Login = () => {
+interface LoginProps {
+  className?: string;
+}
+
+const Login = ({ className }: LoginProps) => {
   const { loginWithRedirect } = useAuth0();
 
   return (
     <StarBorder
       onClick={() => loginWithRedirect()}
-      className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 sm:gap-2.5 text-base sm:text-lg"
+      className={
+        className ||
+        "font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 sm:gap-2.5 text-base sm:text-lg"
+      }
       color="#B19EEF"
       speed="6s"
       thickness={2}

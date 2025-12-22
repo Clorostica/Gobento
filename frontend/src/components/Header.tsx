@@ -1,4 +1,3 @@
-// Header.tsx
 import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import Logout from "./Logout";
@@ -73,67 +72,65 @@ const Header = ({
 
   return (
     <>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {isAuthenticated ? (
-            <div className="flex items-center gap-2 relative">
-              {showConnections && (
-                <StarBorder
-                  onClick={() => setIsFollowersFollowingPanelOpen(true)}
-                  className={`${buttonBaseClasses} star-border-container`}
-                  color="#B19EEF"
-                  speed="6s"
-                  thickness={2}
-                  title="View connections"
-                >
-                  <span className="block sm:hidden text-base">👥</span>
-                  <span className="hidden sm:flex items-center gap-1.5">
-                    <span>👥</span>
-                    <span>Connections</span>
-                  </span>
-                </StarBorder>
-              )}
+      {/* Botones - Siempre alineados a la derecha */}
+      <div className="flex items-center gap-2 ml-auto">
+        {isAuthenticated ? (
+          <>
+            {/* Connections Button - solo cuando está autenticado */}
+            {showConnections && (
+              <StarBorder
+                onClick={() => setIsFollowersFollowingPanelOpen(true)}
+                className={`${buttonBaseClasses} star-border-container`}
+                color="#B19EEF"
+                speed="6s"
+                thickness={2}
+                title="View connections"
+              >
+                <span className="block sm:hidden text-base">👥</span>
+                <span className="hidden sm:flex items-center gap-1.5">
+                  <span>👥</span>
+                  <span>Connections</span>
+                </span>
+              </StarBorder>
+            )}
 
-              {/* User Dropdown */}
-              <div className="relative">
-                <StarBorder
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className={`${buttonBaseClasses} star-border-container cursor-pointer`}
-                  color="#B19EEF"
-                  speed="6s"
-                  thickness={2}
-                  title={displayName || "User profile"}
-                >
-                  {user?.picture ? (
-                    <img
-                      src={user.picture}
-                      alt={displayName || "User"}
-                      className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                      {avatarLetter}
-                    </div>
-                  )}
-                  {displayName && (
-                    <span className="truncate max-w-[120px]">
-                      {displayName}
-                    </span>
-                  )}
-                </StarBorder>
-
-                {/* Dropdown menu */}
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-36 bg-black/90 backdrop-blur-md rounded-lg shadow-lg z-50 flex flex-col">
-                    <Logout />
+            {/* User Button con dropdown - REEMPLAZA al Sign In */}
+            <div className="relative">
+              <StarBorder
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className={`${buttonBaseClasses} star-border-container cursor-pointer`}
+                color="#B19EEF"
+                speed="6s"
+                thickness={2}
+                title={displayName || "User profile"}
+              >
+                {user?.picture ? (
+                  <img
+                    src={user.picture}
+                    alt={displayName || "User"}
+                    className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="rounded-full w-6 h-6 sm:w-7 sm:h-7 ring-2 ring-purple-500/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                    {avatarLetter}
                   </div>
                 )}
-              </div>
+                {displayName && (
+                  <span className="truncate max-w-[120px]">{displayName}</span>
+                )}
+              </StarBorder>
+
+              {/* Dropdown menu con Sign Out */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-36 bg-black/90 backdrop-blur-md rounded-lg shadow-lg z-50 flex flex-col">
+                  <Logout />
+                </div>
+              )}
             </div>
-          ) : (
-            <Login className={buttonBaseClasses} />
-          )}
-        </div>
+          </>
+        ) : (
+          <Login className={buttonBaseClasses} />
+        )}
       </div>
 
       {isAuthenticated && (

@@ -27,19 +27,45 @@ router.post("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
   try {
-    const { sub, email } = req.auth;
-    if (!sub || !email) return res.status(400).json({ error: "Invalid token" });
+    const { sub } = req.auth;
+    // Get email from token or request body
+    const email = req.auth.email || req.body.email;
+
+    console.log("POST /users - Creating user:", {
+      sub,
+      emailFromToken: req.auth.email,
+      emailFromBody: req.body.email,
+      finalEmail: email,
+    });
+
+    if (!sub) {
+      console.error("POST /users - Missing sub in token");
+      return res.status(400).json({ error: "Invalid token: missing user ID" });
+    }
+
+    if (!email) {
+      console.error("POST /users - Missing email in token and body");
+      return res.status(400).json({ error: "Email is required" });
+    }
 
     const { avatar_url, avatarUrl } = req.body;
-    const avatarUrlValue = avatar_url || avatarUrl || null;
+    const avatarUrlValue = avatar_url || avatarUrl || req.auth.picture || null;
+
+    console.log("POST /users - Inserting user into database:", {
+      id: sub,
+      email: email,
+      avatar_url: avatarUrlValue,
+    });
 
     const result = await pool.query(
       "INSERT INTO users(id, email, avatar_url) VALUES($1, $2, $3) RETURNING *",
       [sub, email, avatarUrlValue]
     );
+
+    console.log("POST /users - User created successfully:", result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("POST /users - Error:", err);
     if (err.code === "23505")
       return res.status(400).json({ error: "User already exists" });
     res.status(500).json({ error: "Database error" });
@@ -114,35 +140,77 @@ router.put("/", authenticate, async (req, res) => {
   }
 });
 
-// GET - Buscar usuarios por username o email
+// GET - Buscar usuarios por username o email, o devolver todos si no hay término de búsqueda
 router.get("/search", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
   try {
     const { q, email, username } = req.query;
+    const { sub } = req.auth;
     const searchTerm = q || email || username;
 
-    if (!searchTerm || typeof searchTerm !== "string") {
-      return res.status(400).json({ error: "Search term is required" });
+    let result;
+
+    if (
+      !searchTerm ||
+      typeof searchTerm !== "string" ||
+      searchTerm.trim() === ""
+    ) {
+      // If no search term, return all users (excluding current user)
+      result = await pool.query(
+        `SELECT id, email, username, avatar_url 
+         FROM users 
+         WHERE id != $1
+         ORDER BY username ASC NULLS LAST, email ASC
+         LIMIT 100`,
+        [sub]
+      );
+    } else {
+      // Search by username or email (case-insensitive, partial match)
+      result = await pool.query(
+        `SELECT id, email, username, avatar_url 
+         FROM users 
+         WHERE (username ILIKE $1 OR email ILIKE $1) AND id != $2
+         ORDER BY 
+           CASE 
+             WHEN username ILIKE $3 THEN 1
+             WHEN username ILIKE $1 THEN 2
+             WHEN email ILIKE $1 THEN 3
+             ELSE 4
+           END,
+           username ASC NULLS LAST
+         LIMIT 100`,
+        [`%${searchTerm}%`, sub, `${searchTerm}%`]
+      );
     }
 
-    // Search by username or email (case-insensitive, partial match)
-    const result = await pool.query(
-      `SELECT id, email, username, avatar_url 
-       FROM users 
-       WHERE (username ILIKE $1 OR email ILIKE $1)
-       ORDER BY 
-         CASE 
-           WHEN username ILIKE $2 THEN 1
-           WHEN email ILIKE $2 THEN 2
-           ELSE 3
-         END,
-         username
-       LIMIT 20`,
-      [`%${searchTerm}%`, `${searchTerm}%`]
-    );
-
     res.json({ users: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// DELETE - eliminar usuario actual
+router.delete("/", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    if (!sub) return res.status(400).json({ error: "Invalid token" });
+
+    // Verificar que el usuario existe
+    const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [
+      sub,
+    ]);
+    if (!userCheck.rows[0]) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Eliminar el usuario
+    await pool.query("DELETE FROM users WHERE id = $1", [sub]);
+
+    res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });

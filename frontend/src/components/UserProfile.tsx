@@ -113,7 +113,6 @@ export default function UserProfile() {
         try {
           errorData = await profileRes.json();
         } catch (e) {
-          // If response is not JSON, might be connection error
           if (profileRes.status === 0 || !profileRes.status) {
             throw new Error(
               "Cannot connect to server. Please make sure the backend is running."
@@ -122,9 +121,7 @@ export default function UserProfile() {
           errorData = { error: "Failed to load profile" };
         }
 
-        // If we're not following, we can still show basic profile info
         if (profileRes.status === 403 || profileRes.status === 404) {
-          // Try to get basic user info
           try {
             const userInfoRes = await fetch(`${API_URL}/users/${userId}`, {
               headers: { Authorization: `Bearer ${idToken}` },

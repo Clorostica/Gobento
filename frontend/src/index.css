@@ -11,8 +11,9 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  background: transparent;
+  background: black;
   overflow-x: hidden;
+  color: white;
 }
 
 body {

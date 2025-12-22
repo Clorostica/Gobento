@@ -84,7 +84,6 @@ export default function HomePage() {
     } catch (error) {}
 
     try {
-      // Create new user
       console.log("Creating new user with data:", {
         email: user?.email,
         picture: user?.picture,
@@ -104,13 +103,13 @@ export default function HomePage() {
             (newUser as any).avatar_url || (newUser as any).avatarUrl || null,
           isPrivate: newUser.isPrivate ?? false,
         });
-        // Mark as newly created and show modal
+
         setIsNewlyCreatedUser(true);
         setShowUsernameModal(true);
       }
     } catch (error) {
       console.error("❌ Error creating user:", error);
-      // Log more details about the error
+
       if (error instanceof Error) {
         console.error("Error message:", error.message);
         console.error("Error stack:", error.stack);
@@ -122,13 +121,10 @@ export default function HomePage() {
   const loadEvents = useCallback(async () => {
     setIsLoadingEvents(true);
     try {
-      // If user is authenticated, load from API
       if (isAuthenticated && token) {
         const events = await eventsService.getAllEvents();
         setEvents(events);
-      }
-      // Only load from localStorage if NOT authenticated and NOT loading
-      else if (!isAuthenticated && !isLoading) {
+      } else if (!isAuthenticated && !isLoading) {
         const localEvents = getEvents();
         setEvents(localEvents);
       }

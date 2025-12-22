@@ -17,6 +17,7 @@ export default function App() {
             height: "100vh",
             zIndex: 0,
             pointerEvents: "none",
+            background: "black",
           }}
         >
           <Aurora

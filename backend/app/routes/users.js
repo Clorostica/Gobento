@@ -4,16 +4,33 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET - Obtener usuario específico (usuario actual)
+// GET - Obtener usuario específico (usuario actual) - AUTO-CREAR si no existe
 router.get("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
   try {
-    const { sub, email } = req.auth;
+    const { sub, email, picture } = req.auth;
 
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [sub]);
-    if (!result.rows[0])
-      return res.status(400).json({ error: "No user found" });
+    // Intentar obtener el usuario
+    let result = await pool.query("SELECT * FROM users WHERE id = $1", [sub]);
+
+    // Si no existe, crearlo automáticamente
+    if (!result.rows[0]) {
+      console.log("User not found, creating automatically:", { sub, email });
+
+      if (!email) {
+        return res
+          .status(400)
+          .json({ error: "Email is required to create user" });
+      }
+
+      result = await pool.query(
+        "INSERT INTO users(id, email, avatar_url) VALUES($1, $2, $3) RETURNING *",
+        [sub, email, picture || null]
+      );
+
+      console.log("User auto-created:", result.rows[0]);
+    }
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -22,52 +39,47 @@ router.get("/", authenticate, async (req, res) => {
   }
 });
 
-// POST - crear usuario
+// POST - crear usuario (mejorado con upsert)
 router.post("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });
 
   try {
-    const { sub } = req.auth;
-    // Get email from token or request body
+    const { sub, picture } = req.auth;
     const email = req.auth.email || req.body.email;
 
     console.log("POST /users - Creating user:", {
       sub,
-      emailFromToken: req.auth.email,
-      emailFromBody: req.body.email,
-      finalEmail: email,
+      email,
+      picture,
     });
 
     if (!sub) {
-      console.error("POST /users - Missing sub in token");
       return res.status(400).json({ error: "Invalid token: missing user ID" });
     }
 
     if (!email) {
-      console.error("POST /users - Missing email in token and body");
       return res.status(400).json({ error: "Email is required" });
     }
 
     const { avatar_url, avatarUrl } = req.body;
-    const avatarUrlValue = avatar_url || avatarUrl || req.auth.picture || null;
+    const avatarUrlValue = avatar_url || avatarUrl || picture || null;
 
-    console.log("POST /users - Inserting user into database:", {
-      id: sub,
-      email: email,
-      avatar_url: avatarUrlValue,
-    });
-
+    // Usar INSERT ... ON CONFLICT (upsert) para evitar errores si el usuario ya existe
     const result = await pool.query(
-      "INSERT INTO users(id, email, avatar_url) VALUES($1, $2, $3) RETURNING *",
+      `INSERT INTO users(id, email, avatar_url) 
+       VALUES($1, $2, $3) 
+       ON CONFLICT (id) 
+       DO UPDATE SET 
+         email = EXCLUDED.email,
+         avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url)
+       RETURNING *`,
       [sub, email, avatarUrlValue]
     );
 
-    console.log("POST /users - User created successfully:", result.rows[0]);
+    console.log("POST /users - User created/updated:", result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("POST /users - Error:", err);
-    if (err.code === "23505")
-      return res.status(400).json({ error: "User already exists" });
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -224,7 +236,6 @@ router.get("/:userId", authenticate, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Only select columns that exist in the users table
     const result = await pool.query(
       "SELECT id, email, username, avatar_url FROM users WHERE id = $1",
       [userId]

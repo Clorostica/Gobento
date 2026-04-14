@@ -5,9 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon app/index.js",
-    "migrate:new": "node-pg-migrate create",
-    "migrate:up": "node-pg-migrate --config-file database.json up",
-    "migrate:down": "node-pg-migrate --config-file database.json down"
+    "db:apply": "wrangler d1 execute $CF_D1_DATABASE_ID --file=schema.sql",
+    "db:apply:remote": "wrangler d1 execute $CF_D1_DATABASE_ID --file=schema.sql --remote"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -15,11 +14,10 @@
     "express": "^5.1.0",
     "express-jwt": "^8.5.1",
     "jwks-rsa": "^3.2.0",
-    "pg": "^8.16.3",
     "uploadthing": "^7.7.4"
   },
   "devDependencies": {
-    "node-pg-migrate": "^8.0.3",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "wrangler": "^3.0.0"
   }
 }

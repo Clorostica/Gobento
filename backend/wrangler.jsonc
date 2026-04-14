@@ -1,0 +1,13 @@
+{
+  "name": "task-list-backend",
+  "main": "app/index.js",
+  "compatibility_date": "2025-04-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "task-list-db",
+      "database_id": "09c161bd-69ea-45e5-98b0-82edf07027e3"
+    }
+  ]
+}

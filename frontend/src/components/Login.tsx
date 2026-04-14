@@ -13,7 +13,7 @@ const Login = ({ className }: LoginProps) => {
       onClick={() => loginWithRedirect()}
       className={
         className ||
-        "font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 sm:gap-2.5 text-base sm:text-lg"
+        "font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 sm:gap-2.5 text-base sm:text-lg pr-4"
       }
       color="#B19EEF"
       speed="6s"

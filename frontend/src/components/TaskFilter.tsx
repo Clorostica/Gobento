@@ -1,4 +1,5 @@
 import React from "react";
+import Tooltip from "./Tooltip";
 
 export type FilterStatus =
   | "all"
@@ -19,6 +20,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     value: FilterStatus;
     label: string;
     icon: string;
+    tooltip: string;
     gradient?: string;
     color?: string;
   }[] = [
@@ -26,6 +28,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "all",
       label: "All Events",
       icon: "🎉",
+      tooltip: "Show all your events",
       gradient: "from-purple-600 via-purple-500 to-purple-600",
       color: "purple",
     },
@@ -33,6 +36,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "planned",
       label: "Ideas",
       icon: "💡",
+      tooltip: "Events you're planning",
       gradient: "from-purple-600 via-purple-500 to-purple-600",
       color: "purple",
     },
@@ -40,6 +44,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "upcoming",
       label: "Upcoming",
       icon: "📅",
+      tooltip: "Events happening soon",
       gradient: "from-blue-500 via-cyan-500 to-blue-500",
       color: "blue",
     },
@@ -47,6 +52,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "happened",
       label: "Memories",
       icon: "✨",
+      tooltip: "Past events & memories",
       gradient: "from-green-500 via-emerald-500 to-green-500",
       color: "green",
     },
@@ -54,6 +60,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "private",
       label: "Private",
       icon: "🔒",
+      tooltip: "Only visible to you",
       gradient: "from-gray-600 via-gray-700 to-gray-600",
       color: "gray",
     },
@@ -61,6 +68,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "liked",
       label: "Favorites",
       icon: "❤️",
+      tooltip: "Events you've liked",
       gradient: "from-red-500 via-pink-500 to-red-500",
       color: "pink",
     },
@@ -68,6 +76,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       value: "friends",
       label: "Friends",
       icon: "👥",
+      tooltip: "Events from people you follow",
       gradient: "from-orange-500 via-amber-500 to-orange-500",
       color: "orange",
     },
@@ -76,24 +85,24 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   return (
     <>
       {filters.map((f) => (
-        <button
-          key={f.value}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => setFilter(f.value)}
-          className={`
-            px-4 py-2.5 rounded-xl text-sm font-semibold border-2
-            whitespace-nowrap flex items-center flex-shrink-0
-            ${
-              filter === f.value
-                ? `bg-gradient-to-r ${f.gradient} text-white border-white/20`
-                : "bg-black/20 text-white/80 hover:bg-black/30 hover:text-white border-transparent"
-            }
-          `}
-          title={`Filter by ${f.label}`}
-        >
-          <span className="mr-2 text-base flex-shrink-0">{f.icon}</span>
-          <span>{f.label}</span>
-        </button>
+        <Tooltip key={f.value} label={f.tooltip}>
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setFilter(f.value)}
+            className={`
+              px-4 py-2.5 rounded-xl text-sm font-semibold border-2
+              whitespace-nowrap flex items-center flex-shrink-0
+              ${
+                filter === f.value
+                  ? `bg-gradient-to-r ${f.gradient} text-white border-white/20`
+                  : "bg-black/20 text-white/80 hover:bg-black/30 hover:text-white border-transparent"
+              }
+            `}
+          >
+            <span className="mr-2 text-base flex-shrink-0">{f.icon}</span>
+            <span>{f.label}</span>
+          </button>
+        </Tooltip>
       ))}
     </>
   );

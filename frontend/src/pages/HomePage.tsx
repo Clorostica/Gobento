@@ -484,7 +484,7 @@ export default function HomePage() {
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
         <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 flex-grow">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -548,7 +548,7 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="flex flex-wrap items-center gap-3 mb-8">
                 <EventFilter filter={filter} setFilter={setFilter} />
                 <button
                   onClick={() => {

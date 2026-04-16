@@ -4,6 +4,7 @@ import Logout from "./Logout";
 import FollowersFollowingPanel from "./FollowersFollowingPanel";
 import NotificationBell from "./NotificationBell";
 import StarBorder from "./StarBorder";
+import Tooltip from "./Tooltip";
 import { useAuth0 } from "@auth0/auth0-react";
 import type { AuthUser } from "../types/auth/user.types";
 
@@ -43,37 +44,38 @@ const Header = ({
       <div className="flex items-center gap-2 ml-auto">
         {isAuthenticated ? (
           <>
-            {/* Connections Button - solo cuando está autenticado */}
+            {/* Connections Button */}
             {showConnections && (
-              <StarBorder
-                onClick={() => setIsFollowersFollowingPanelOpen(true)}
-                className={`${buttonBaseClasses} star-border-container`}
-                color="#B19EEF"
-                speed="6s"
-                thickness={2}
-                title="View connections"
-              >
-                <span className="block sm:hidden text-base">👥</span>
-                <span className="hidden sm:flex items-center gap-1.5">
-                  <span>👥</span>
-                  <span>Connections</span>
-                </span>
-              </StarBorder>
+              <Tooltip label="Connections">
+                <StarBorder
+                  onClick={() => setIsFollowersFollowingPanelOpen(true)}
+                  className={`${buttonBaseClasses} star-border-container`}
+                  color="#B19EEF"
+                  speed="6s"
+                  thickness={2}
+                >
+                  <span className="block sm:hidden text-base">👥</span>
+                  <span className="hidden sm:flex items-center gap-1.5">
+                    <span>👥</span>
+                    <span>Connections</span>
+                  </span>
+                </StarBorder>
+              </Tooltip>
             )}
 
             {/* Notification Bell */}
             <NotificationBell token={token} API_URL={API_URL} />
 
-            {/* User Button con dropdown - REEMPLAZA al Sign In */}
+            {/* User Button con dropdown */}
             <div className="relative">
-              <StarBorder
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className={`${buttonBaseClasses} star-border-container cursor-pointer`}
-                color="#B19EEF"
-                speed="6s"
-                thickness={2}
-                title={displayName || "User profile"}
-              >
+              <Tooltip label={displayName ? `@${displayName}` : "Profile"}>
+                <StarBorder
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className={`${buttonBaseClasses} star-border-container cursor-pointer`}
+                  color="#B19EEF"
+                  speed="6s"
+                  thickness={2}
+                >
                 {user?.picture ? (
                   <img
                     src={user.picture}
@@ -89,6 +91,7 @@ const Header = ({
                   <span className="truncate w-[90px] sm:w-[110px] text-left">{displayName}</span>
                 )}
               </StarBorder>
+              </Tooltip>
 
               {/* Dropdown menu con Sign Out */}
               {isUserMenuOpen && (

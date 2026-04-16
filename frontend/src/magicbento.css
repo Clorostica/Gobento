@@ -148,7 +148,7 @@
     }
 }
 
-/* Tablet: patrón más flexible */
+/* Tablet: 1 wide + 2 halves repeating */
 @media (min-width: 600px) and (max-width: 1023px) {
     .card-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -161,34 +161,28 @@
         min-height: 350px;
     }
 
-    /* Patrón: pequeño-pequeño-doble */
-    .magic-bento-card:nth-child(3n+1),
-    .magic-bento-card:nth-child(3n+2) {
-        grid-column: span 2;
-    }
-    .magic-bento-card:nth-child(3n) {
-        grid-column: span 4;
-    }
+    /* pos 1: full width, pos 2+3: half */
+    .magic-bento-card:nth-child(3n+1) { grid-column: span 4; }
+    .magic-bento-card:nth-child(3n+2),
+    .magic-bento-card:nth-child(3n+0) { grid-column: span 2; }
 }
 
-/* Desktop: mantiene patrón original */
+/* Desktop: fixed 5-card repeating bento pattern on 12-column grid
+   Row A: [pos1: 7 cols] [pos2: 5 cols]
+   Row B: [pos3: 4 cols] [pos4: 4 cols] [pos5: 4 cols]
+*/
 @media (min-width: 1024px) {
     .card-grid {
         grid-template-columns: repeat(12, 1fr);
+        grid-auto-rows: auto;
         gap: 1.25rem;
     }
 
-    .magic-bento-card:nth-child(9n+1) { grid-column: span 3; }
-    .magic-bento-card:nth-child(9n+2) { grid-column: span 3; }
-    .magic-bento-card:nth-child(9n+3) { grid-column: span 6; }
-
-    .magic-bento-card:nth-child(9n+4),
-    .magic-bento-card:nth-child(9n+5),
-    .magic-bento-card:nth-child(9n+6) { grid-column: span 4; }
-
-    .magic-bento-card:nth-child(9n+7) { grid-column: span 6; }
-    .magic-bento-card:nth-child(9n+8),
-    .magic-bento-card:nth-child(9n) { grid-column: span 3; }
+    .magic-bento-card:nth-child(5n+1) { grid-column: span 7; min-height: 500px; }
+    .magic-bento-card:nth-child(5n+2) { grid-column: span 5; min-height: 500px; }
+    .magic-bento-card:nth-child(5n+3) { grid-column: span 4; min-height: 400px; }
+    .magic-bento-card:nth-child(5n+4) { grid-column: span 4; min-height: 400px; }
+    .magic-bento-card:nth-child(5n+0) { grid-column: span 4; min-height: 400px; }
 }
 
 /* Extra Large */

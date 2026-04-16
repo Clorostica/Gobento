@@ -12,7 +12,7 @@ export class ApiClientError extends Error {
  * Converts snake_case object keys to camelCase
  */
 export const snakeToCamel = (str: string): string => {
-  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return str.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 };
 
 /**

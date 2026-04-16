@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "./components/ui";
 import HomePage from "./pages/HomePage";
 import UserProfile from "./components/UserProfile";
+import SharedTaskPage from "./pages/SharedTaskPage";
 import Aurora from "./components/Aurora";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/user/:userId" element={<UserProfile />} />
+              <Route path="/share/:token" element={<SharedTaskPage />} />
             </Routes>
           </BrowserRouter>
         </div>

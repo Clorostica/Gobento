@@ -13,6 +13,9 @@ export type Event = {
   image_url?: string | null; // Single image URL from uploadthing
   sharedFromUserId?: string | null; // ID of user who shared this event (if copied from another user)
   originalEventId?: string | null; // ID of the original event that was copied (for tracking copied events)
+  shareToken?: string | null; // Magic link token for public sharing
+  dateOption1?: string | null; // First date option for the poll
+  dateOption2?: string | null; // Second date option for the poll
 };
 
 // Keep Task as alias for backward compatibility during migration

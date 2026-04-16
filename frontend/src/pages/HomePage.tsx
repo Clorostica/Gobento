@@ -436,7 +436,7 @@ export default function HomePage() {
           flexDirection: "column",
         }}
       >
-        <header className="sticky top-0 z-50 w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
+        <header className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
           <div className="w-full sm:max-w-7xl sm:mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-1 sm:py-2 md:py-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-2 sm:mb-0">
               <div className="flex flex-row items-center justify-between w-full sm:order-1 gap-1.5 sm:gap-3 md:gap-4 lg:gap-6">
@@ -491,7 +491,7 @@ export default function HomePage() {
             </div>
           </div>
         </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-20 md:pt-28 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">

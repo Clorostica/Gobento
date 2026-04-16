@@ -53,6 +53,11 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
   const emojiScrollRef = useRef<HTMLDivElement | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const addressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const addressDropdownRef = useRef<HTMLDivElement | null>(null);
   const [mentionableUsers, setMentionableUsers] = useState<User[]>([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -205,9 +210,17 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
       ) {
         setShowMentions(false);
       }
+      if (
+        addressDropdownRef.current &&
+        !addressDropdownRef.current.contains(event.target as Node) &&
+        addressInputRef.current &&
+        !addressInputRef.current.contains(event.target as Node)
+      ) {
+        setShowAddressSuggestions(false);
+      }
     };
 
-    if (showEmojiPicker || showMentions) {
+    if (showEmojiPicker || showMentions || showAddressSuggestions) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
@@ -391,6 +404,31 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
     [text, onTextChange]
   );
 
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    onAddressChange(value);
+    setShowAddressSuggestions(false);
+    setAddressSuggestions([]);
+
+    if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+    if (value.length < 3) return;
+
+    addressDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=5&addressdetails=1`,
+          { headers: { Accept: "application/json" } }
+        );
+        const data = await res.json();
+        const suggestions: string[] = data.map((item: any) => item.display_name);
+        setAddressSuggestions(suggestions);
+        setShowAddressSuggestions(suggestions.length > 0);
+      } catch {
+        // silently fail
+      }
+    }, 350);
+  };
+
   const insertEmoji = (emoji: string) => {
     if (!descriptionTextareaRef.current) return;
     const textarea = descriptionTextareaRef.current;
@@ -448,25 +486,42 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
           className="w-full bg-black bg-opacity-30 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
           placeholder="Time"
         />
-        <input
-          type="text"
-          value={address || ""}
-          onChange={(e) => {
-            console.log(
-              "TaskEditForm - Address input changed:",
-              e.target.value
-            );
-            onAddressChange(e.target.value);
-          }}
-          onBlur={(e) => {
-            console.log(
-              "TaskEditForm - Address input blurred:",
-              e.target.value
-            );
-          }}
-          className="w-full bg-black bg-opacity-30 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-          placeholder="📍 Address (e.g., 123 Main St, City)"
-        />
+        <div className="relative">
+          <input
+            ref={addressInputRef}
+            type="text"
+            value={address || ""}
+            onChange={handleAddressChange}
+            onFocus={() => {
+              if (addressSuggestions.length > 0) setShowAddressSuggestions(true);
+            }}
+            className="w-full bg-black bg-opacity-30 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            placeholder="📍 Address"
+            autoComplete="off"
+          />
+          {showAddressSuggestions && addressSuggestions.length > 0 && (
+            <div
+              ref={addressDropdownRef}
+              className="absolute left-0 right-0 top-full mt-1 bg-black/95 backdrop-blur-sm border border-purple-400/40 rounded-lg shadow-2xl overflow-hidden z-[9999]"
+            >
+              {addressSuggestions.map((suggestion, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onAddressChange(suggestion);
+                    setShowAddressSuggestions(false);
+                    setAddressSuggestions([]);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs text-white/80 hover:bg-purple-500/30 transition-colors border-b border-white/5 last:border-b-0 truncate"
+                >
+                  📍 {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -499,7 +554,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
           }}
           className="w-full bg-black bg-opacity-30 text-white p-3 pb-10 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
           rows={4}
-          placeholder="Task description (type @ to mention users)"
+          placeholder="Event description (type @ to mention users)"
           style={{ fontSize: "0.875rem", minHeight: "120px" }}
           ref={descriptionTextareaRef}
         />
@@ -689,8 +744,26 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <label className="cursor-pointer">
+      {/* Upload progress bar */}
+      {isUploading && (
+        <div className="w-full px-0.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-white/50">Uploading…</span>
+            <span className="text-[11px] text-white/50">{Math.round(uploadProgress)}%</span>
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-full rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Action row */}
+      <div className="flex items-center gap-2 pt-1">
+        {/* Add image */}
+        <label className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.09] hover:border-purple-400/40 text-white/60 hover:text-white/90 text-xs font-medium transition-all select-none ${isUploading ? "opacity-40 pointer-events-none" : ""}`}>
           <input
             type="file"
             accept="image/*"
@@ -699,41 +772,37 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
             className="hidden"
             disabled={isUploading}
           />
-          <span
-            className={`button-primary ${
-              isUploading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            📷 Add img
-          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Image
         </label>
-        {isUploading && (
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-white">Uploading...</span>
-              <span className="text-xs text-white">
-                {Math.round(uploadProgress)}%
-              </span>
-            </div>
-            <div className="w-full bg-black bg-opacity-30 rounded-full h-2">
-              <div
-                className="bg-purple-400 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div className="flex gap-2 items-center justify-between">
-        <div className="flex gap-2">
-          <button onClick={onSave} className="button-primary">
-            Save
-          </button>
-          <button onClick={onCancel} className="button-primary">
-            Cancel
-          </button>
-        </div>
+        <div className="flex-1" />
+
+        {/* Cancel */}
+        <button
+          onClick={onCancel}
+          type="button"
+          className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white/50 hover:text-white/80 text-xs font-medium transition-all"
+        >
+          Cancel
+        </button>
+
+        {/* Save */}
+        <button
+          onClick={onSave}
+          type="button"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-semibold shadow-lg shadow-violet-500/20 transition-all active:scale-95"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Save
+        </button>
+
+        {/* Delete */}
         {onDelete && (
           <button
             onClick={(e) => {
@@ -745,11 +814,13 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="text-white hover:text-red-300 text-xs px-2 py-1 rounded transition-colors z-10 relative"
-            title="Delete"
             type="button"
+            title="Delete event"
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] hover:bg-red-500/15 hover:border-red-400/30 text-white/30 hover:text-red-400 transition-all"
           >
-            ✕
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
           </button>
         )}
       </div>

@@ -6,8 +6,17 @@ import TaskDateDisplay from "./TaskDateDisplay";
 import TaskImageViewer from "./TaskImageViewer";
 import HeartButton from "./HeartButton";
 import FloatingCopyButton from "./FloatingCopyButton";
+import ShareLinkButton from "./ShareLinkButton";
 import TextWithMentions from "./TextWithMentions";
 import { getStatusIcon, getStatusLabel, getStatusLabelText } from "./utils";
+import { env } from "@/config/env";
+
+interface CardComment {
+  id: string;
+  name: string;
+  comment: string;
+  createdAt: string;
+}
 
 interface TaskCardContentProps {
   task: Task;
@@ -43,6 +52,8 @@ interface TaskCardContentProps {
   onCopyEvent?: (task: Task) => void;
   copiedEventIds?: Set<string>;
   copyingEventId?: string | null;
+  onShareEvent?: (taskId: string, dateOption1: string, dateOption2: string) => Promise<string>;
+  onGetVotes?: (taskId: string) => Promise<{ 1: number; 2: number; total: number }>;
 }
 
 const TaskCardContent: React.FC<TaskCardContentProps> = ({
@@ -74,10 +85,50 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
   onCopyEvent,
   copiedEventIds,
   copyingEventId,
+  onShareEvent,
+  onGetVotes,
 }) => {
   const isEditing = editingId === task.id;
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  // Instagram-style comments
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [cardComments, setCardComments] = useState<CardComment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
+
+  const loadComments = async () => {
+    if (!task.shareToken || commentsLoaded || commentsLoading) return;
+    setCommentsLoading(true);
+    try {
+      const res = await fetch(`${env.API_URL}/share/${task.shareToken}/comments`);
+      const data = await res.json();
+      if (data.comments) {
+        setCardComments(
+          data.comments.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            comment: c.comment,
+            createdAt: c.created_at || c.createdAt || "",
+          }))
+        );
+      }
+      setCommentsLoaded(true);
+    } catch {
+      // silently fail
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handleToggleComments = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!commentsOpen) loadComments();
+    setCommentsOpen((v) => !v);
+    setShowAllComments(false);
+  };
 
   const statuses = ["planned", "upcoming", "happened", "private"];
 
@@ -229,6 +280,13 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
               {getStatusIcon(task.status)}
             </span>
           )}
+          {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
+            <ShareLinkButton
+              task={task}
+              onShare={onShareEvent}
+              onGetVotes={onGetVotes}
+            />
+          )}
           {onDelete && !isReadOnly && (
             <button
               onClick={(e) => {
@@ -359,6 +417,57 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                 />
               ) : null;
             })()}
+
+            {/* Instagram-style comments — only for owned events with a magic link */}
+            {task.shareToken && !isReadOnly && !task.sharedFromUserId && (
+              <div className="mt-4 pt-3 border-t border-white/[0.07]">
+                <button
+                  onClick={handleToggleComments}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {commentsLoaded
+                    ? cardComments.length === 0
+                      ? "No comments"
+                      : `${cardComments.length} ${cardComments.length === 1 ? "comment" : "comments"}`
+                    : "Read comments"}
+                  {commentsLoaded && cardComments.length > 0 && (
+                    <span className="opacity-60">· {commentsOpen ? "hide" : "view"}</span>
+                  )}
+                  {commentsLoading && (
+                    <span className="inline-block w-3 h-3 border border-white/30 border-t-white/70 rounded-full animate-spin" />
+                  )}
+                </button>
+
+                {commentsOpen && commentsLoaded && cardComments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {(showAllComments ? cardComments : cardComments.slice(-2)).map((c) => (
+                      <div key={c.id} className="flex gap-2 items-start">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[11px] font-semibold text-white/70 mr-1">{c.name}</span>
+                          <span className="text-[11px] text-white/45 break-words">{c.comment}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {!showAllComments && cardComments.length > 2 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowAllComments(true); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="text-[11px] text-violet-400/70 hover:text-violet-300 transition-colors"
+                      >
+                        View all {cardComments.length} comments
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

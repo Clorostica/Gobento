@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomUUID } from "node:crypto";
 import { pool } from "../db/pool.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -511,6 +512,83 @@ router.post("/unfollow/:userId", authenticate, async (req, res) => {
     res.json({ message: "Successfully unfollowed user" });
   } catch (err) {
     console.error("Error unfollowing user:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// POST /:eventId/share — generate or update magic link with 2 date options
+router.post("/:eventId/share", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    const { eventId } = req.params;
+    const { dateOption1, dateOption2 } = req.body;
+
+    if (!dateOption1 || !dateOption2) {
+      return res.status(400).json({ error: "Both date options are required" });
+    }
+
+    const eventCheck = await pool.query(
+      "SELECT user_id, share_token FROM task_list WHERE id = $1",
+      [eventId]
+    );
+
+    if (!eventCheck.rows[0]) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+    if (eventCheck.rows[0].user_id !== sub) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const token = eventCheck.rows[0].share_token || randomUUID();
+
+    await pool.query(
+      "UPDATE task_list SET share_token = $1, date_option_1 = $2, date_option_2 = $3 WHERE id = $4",
+      [token, dateOption1, dateOption2, eventId]
+    );
+
+    res.json({ token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// GET /:eventId/votes — get vote stats for the task owner
+router.get("/:eventId/votes", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+    const { eventId } = req.params;
+
+    const eventCheck = await pool.query(
+      "SELECT user_id FROM task_list WHERE id = $1",
+      [eventId]
+    );
+
+    if (!eventCheck.rows[0]) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+    if (eventCheck.rows[0].user_id !== sub) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const votes = await pool.query(
+      "SELECT selected_option, COUNT(*) as count FROM task_votes WHERE task_id = $1 GROUP BY selected_option",
+      [eventId]
+    );
+
+    const result = { 1: 0, 2: 0, total: 0 };
+    votes.rows.forEach((v) => {
+      result[v.selected_option] = parseInt(v.count);
+      result.total += parseInt(v.count);
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Database error" });
   }
 });

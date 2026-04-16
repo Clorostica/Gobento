@@ -666,6 +666,36 @@ export default function TodoList({
           onLikeToggle={toggleLike}
           addTask={(status) => addEvent(status as EventStatus)}
           currentFilter={filter}
+          {...(isAuthenticated && token ? {
+            onShareEvent: async (taskId: string, dateOption1: string, dateOption2: string) => {
+              const res = await fetch(`${API_URL}/events/${taskId}/share`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ dateOption1, dateOption2 }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "Failed to generate link");
+              setTodos((prev) =>
+                prev.map((t) =>
+                  t.id === taskId
+                    ? { ...t, shareToken: data.token, dateOption1, dateOption2 }
+                    : t
+                )
+              );
+              return data.token as string;
+            },
+            onGetVotes: async (taskId: string) => {
+              const res = await fetch(`${API_URL}/events/${taskId}/votes`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "Failed to get votes");
+              return data as { 1: number; 2: number; total: number };
+            },
+          } : {})}
         />
       </div>
 

@@ -74,6 +74,8 @@ export interface BentoProps {
   onCopyEvent?: (event: Event) => void;
   copiedEventIds?: Set<string>;
   copyingEventId?: string | null;
+  onShareEvent?: (taskId: string, dateOption1: string, dateOption2: string) => Promise<string>;
+  onGetVotes?: (taskId: string) => Promise<{ 1: number; 2: number; total: number }>;
 }
 
 const useMobileDetection = () => {
@@ -117,6 +119,8 @@ const MagicBento: React.FC<BentoProps> = ({
   onCopyEvent,
   copiedEventIds,
   copyingEventId,
+  onShareEvent,
+  onGetVotes,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
@@ -132,56 +136,6 @@ const MagicBento: React.FC<BentoProps> = ({
   const [dragOverEventId, setDragOverEventId] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Don't run if currently editing a task
-    if (editingId !== null) return;
-
-    const equalizeCardHeights = () => {
-      if (!gridRef.current) return;
-      // Don't run if editing started during the delay
-      if (editingId !== null) return;
-
-      const cards = gridRef.current.querySelectorAll(
-        ".magic-bento-card"
-      ) as NodeListOf<HTMLElement>;
-      if (cards.length === 0) return;
-
-      // Use fixed height: 500px on desktop, 400px on mobile
-      const isMobileView = window.innerWidth <= 599;
-      const fixedHeight = isMobileView ? 400 : 500;
-
-      cards.forEach((card) => {
-        // Check if this card has images by looking for img elements
-        const hasImages = card.querySelector("img") !== null;
-
-        if (hasImages) {
-          // Allow cards with images to expand automatically
-          card.style.height = "auto";
-          card.style.minHeight = `${fixedHeight}px`;
-        } else {
-          // Cards without images get fixed height
-          card.style.height = `${fixedHeight}px`;
-          card.style.minHeight = `${fixedHeight}px`;
-        }
-      });
-    };
-
-    // Run after a short delay to ensure DOM is fully rendered
-    const timeoutId = setTimeout(equalizeCardHeights, 100);
-
-    // Only listen to resize when not editing
-    const handleResize = () => {
-      if (editingId === null) {
-        equalizeCardHeights();
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [tasks, editingId]); // Re-run when tasks or editing state changes
 
   const handleEditStart = (event: Event) => {
     if (isReadOnly) return; // Prevent editing in read-only mode
@@ -351,7 +305,7 @@ const MagicBento: React.FC<BentoProps> = ({
     setDragOverEventId(null);
   };
 
-  const renderTaskCard = (event: Event, index: number) => {
+  const renderTaskCard = (event: Event, _index: number) => {
     const isDragOver = dragOverEventId === event.id;
     const baseClassName = `magic-bento-card ${
       textAutoHide ? "magic-bento-card--text-autohide" : ""
@@ -502,6 +456,8 @@ const MagicBento: React.FC<BentoProps> = ({
       ...(onCopyEvent ? { onCopyEvent } : {}),
       ...(copiedEventIds ? { copiedEventIds } : {}),
       ...(copyingEventId !== undefined ? { copyingEventId } : {}),
+      ...(onShareEvent ? { onShareEvent } : {}),
+      ...(onGetVotes ? { onGetVotes } : {}),
     };
 
     if (onDelete) {

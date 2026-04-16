@@ -6,8 +6,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "task-list-db",
-      "database_id": "09c161bd-69ea-45e5-98b0-82edf07027e3"
-    }
-  ]
+      "database_name": "gobento",
+      "database_id": "f025d63e-ef0e-456a-bdeb-dbc954e69f98",
+    },
+  ],
 }

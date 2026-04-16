@@ -72,4 +72,21 @@ export class EventsService {
   async getUserProfile(userId: string): Promise<UserProfileResponse> {
     return this.apiClient.get<UserProfileResponse>(`/events/user/${userId}`);
   }
+
+  async shareEvent(
+    eventId: string,
+    dateOption1: string,
+    dateOption2: string
+  ): Promise<{ token: string }> {
+    return this.apiClient.post<{ token: string }>(`/events/${eventId}/share`, {
+      dateOption1,
+      dateOption2,
+    });
+  }
+
+  async getEventVotes(
+    eventId: string
+  ): Promise<{ 1: number; 2: number; total: number }> {
+    return this.apiClient.get(`/events/${eventId}/votes`);
+  }
 }

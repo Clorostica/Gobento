@@ -29,7 +29,7 @@ const TaskImageViewer: React.FC<TaskImageViewerProps> = ({
           <div key={index} className="relative group">
             <img
               src={image}
-              alt={`Task image ${index + 1}`}
+              alt={`Event image ${index + 1}`}
               className={`w-full transition-colors cursor-pointer ${
                 images.length === 1
                   ? "min-h-[250px] object-contain"

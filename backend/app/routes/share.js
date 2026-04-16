@@ -9,7 +9,7 @@ router.get("/:token", async (req, res) => {
     const { token } = req.params;
 
     const result = await pool.query(
-      `SELECT id, title, text, status, date_option_1, date_option_2, due_date, address, image_url
+      `SELECT id, user_id, title, text, status, date_option_1, date_option_2, due_date, address, image_url
        FROM task_list WHERE share_token = $1`,
       [token]
     );
@@ -52,7 +52,7 @@ router.post("/:token/vote", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id FROM task_list WHERE share_token = $1",
+      "SELECT id, user_id, title FROM task_list WHERE share_token = $1",
       [token]
     );
 
@@ -60,8 +60,9 @@ router.post("/:token/vote", async (req, res) => {
       return res.status(404).json({ error: "Link not found" });
     }
 
-    const taskId = result.rows[0].id;
+    const { id: taskId, user_id: ownerId, title: eventTitle } = result.rows[0];
 
+    let isNewVote = true;
     try {
       await pool.query(
         "INSERT INTO task_votes (task_id, selected_option, voter_session) VALUES ($1, $2, $3)",
@@ -69,13 +70,26 @@ router.post("/:token/vote", async (req, res) => {
       );
     } catch (err) {
       if (err.code === "23505") {
-        // Already voted — update their choice
+        isNewVote = false;
         await pool.query(
           "UPDATE task_votes SET selected_option = $1 WHERE task_id = $2 AND voter_session = $3",
           [selectedOption, taskId, voterSession]
         );
       } else {
         throw err;
+      }
+    }
+
+    // Notify event owner on new votes only (not re-votes)
+    if (isNewVote && ownerId) {
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, actor_name, type, event_id, event_title)
+           VALUES ($1, 'Someone', 'vote', $2, $3)`,
+          [ownerId, taskId, eventTitle || "your event"]
+        );
+      } catch (notifErr) {
+        console.error("Error creating vote notification:", notifErr);
       }
     }
 
@@ -141,14 +155,14 @@ router.post("/:token/comments", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id FROM task_list WHERE share_token = $1",
+      "SELECT id, user_id, title FROM task_list WHERE share_token = $1",
       [token]
     );
     if (!result.rows[0]) {
       return res.status(404).json({ error: "Link not found" });
     }
 
-    const taskId = result.rows[0].id;
+    const { id: taskId, user_id: ownerId, title: eventTitle } = result.rows[0];
     const displayName = (name || "").trim() || "Anonymous";
 
     await pool.query(
@@ -156,6 +170,19 @@ router.post("/:token/comments", async (req, res) => {
        VALUES ($1, $2, $3, $4)`,
       [taskId, voterSession, displayName, comment.trim()]
     );
+
+    // Notify event owner
+    if (ownerId) {
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, actor_name, type, event_id, event_title)
+           VALUES ($1, $2, 'comment', $3, $4)`,
+          [ownerId, displayName, taskId, eventTitle || "your event"]
+        );
+      } catch (notifErr) {
+        console.error("Error creating comment notification:", notifErr);
+      }
+    }
 
     const comments = await pool.query(
       `SELECT id, name, comment, created_at

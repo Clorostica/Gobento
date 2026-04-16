@@ -19,9 +19,11 @@
 .bento-section {
     position: relative;
     user-select: none;
+    width: 100%;
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 1rem;
+    box-sizing: border-box;
 }
 
 .card-grid {
@@ -47,7 +49,8 @@
     font-weight: 300;
     height: auto !important;
     overflow: visible;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s;
+    z-index: 1;
 
     --glow-x: 50%;
     --glow-y: 50%;
@@ -56,8 +59,8 @@
 }
 
 .magic-bento-card:hover {
-    transform: translateY(-4px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    z-index: 10;
 }
 .magic-bento-card img {
     width: 100%;

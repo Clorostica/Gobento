@@ -7,7 +7,9 @@ import {
   type VoteCounts,
   type TaskComment,
 } from "@/services/shareService";
-import StarBorder from "@/components/StarBorder";
+import Header from "@/components/Header";
+import { env } from "@/config/env";
+import { useAuth } from "@/hooks";
 
 const VOTER_SESSION_KEY = "voter_session";
 const VOTED_TOKENS_KEY = "voted_tokens";
@@ -123,7 +125,7 @@ function ResultBar({
   );
 }
 
-/* ── Sliding switch — click locks in immediately ── */
+/* ── Sliding switch ── */
 function DateSwitch({
   date1,
   date2,
@@ -139,82 +141,45 @@ function DateSwitch({
 }) {
   const d1 = formatDateShort(date1);
   const d2 = formatDateShort(date2);
-  const trackRef = useRef<HTMLDivElement>(null);
   const locked = selected !== null;
 
   return (
     <div className="space-y-3">
       <div
-        ref={trackRef}
         className="relative bg-white/[0.06] border border-white/10 rounded-2xl p-1.5 flex select-none"
         style={{ cursor: locked ? "default" : "pointer" }}
       >
-        {/* Sliding pill */}
         <div
-          className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] rounded-xl
-            bg-gradient-to-br from-violet-600 to-fuchsia-600
-            shadow-lg shadow-violet-500/30
-            transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-            ${selected === 2 ? "translate-x-[calc(100%+6px)]" : "translate-x-0"}
-            ${selected === null ? "opacity-0 scale-95" : "opacity-100 scale-100"}
-          `}
+          className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-lg shadow-violet-500/30 transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${selected === 2 ? "translate-x-[calc(100%+6px)]" : "translate-x-0"} ${selected === null ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         />
-
-        {/* Option 1 */}
-        <button
-          onClick={() => !locked && !isVoting && onSelect(1)}
-          disabled={isVoting}
-          className="relative z-10 flex-1 py-4 px-3 rounded-xl text-center transition-colors duration-200 disabled:cursor-not-allowed"
-          style={{ cursor: locked ? "default" : "pointer" }}
-        >
-          <div className={`text-[10px] uppercase tracking-[0.18em] font-semibold mb-1 transition-colors duration-200 ${selected === 1 ? "text-violet-200" : "text-white/30"}`}>
-            {d1.weekday}
-          </div>
-          <div className={`text-3xl font-black leading-none transition-colors duration-200 ${selected === 1 ? "text-white" : "text-white/40"}`}>
-            {isVoting && selected === 1
-              ? <span className="inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              : d1.day}
-          </div>
-          <div className={`text-xs font-medium mt-1 transition-colors duration-200 ${selected === 1 ? "text-fuchsia-200" : "text-white/25"}`}>
-            {d1.month} {d1.year}
-          </div>
-        </button>
-
-        {/* Divider */}
-        <div className="relative z-10 flex items-center flex-shrink-0 px-1">
-          <span className="text-[9px] font-black text-white/15 tracking-widest">OR</span>
-        </div>
-
-        {/* Option 2 */}
-        <button
-          onClick={() => !locked && !isVoting && onSelect(2)}
-          disabled={isVoting}
-          className="relative z-10 flex-1 py-4 px-3 rounded-xl text-center transition-colors duration-200 disabled:cursor-not-allowed"
-          style={{ cursor: locked ? "default" : "pointer" }}
-        >
-          <div className={`text-[10px] uppercase tracking-[0.18em] font-semibold mb-1 transition-colors duration-200 ${selected === 2 ? "text-violet-200" : "text-white/30"}`}>
-            {d2.weekday}
-          </div>
-          <div className={`text-3xl font-black leading-none transition-colors duration-200 ${selected === 2 ? "text-white" : "text-white/40"}`}>
-            {isVoting && selected === 2
-              ? <span className="inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              : d2.day}
-          </div>
-          <div className={`text-xs font-medium mt-1 transition-colors duration-200 ${selected === 2 ? "text-fuchsia-200" : "text-white/25"}`}>
-            {d2.month} {d2.year}
-          </div>
-        </button>
+        {([1, 2] as const).map((opt, i) => {
+          const d = i === 0 ? d1 : d2;
+          return (
+            <>
+              {i === 1 && (
+                <div key="divider" className="relative z-10 flex items-center flex-shrink-0 px-1">
+                  <span className="text-[9px] font-black text-white/15 tracking-widest">OR</span>
+                </div>
+              )}
+              <button
+                key={opt}
+                onClick={() => !locked && !isVoting && onSelect(opt)}
+                disabled={isVoting}
+                className="relative z-10 flex-1 py-4 px-3 rounded-xl text-center transition-colors duration-200 disabled:cursor-not-allowed"
+                style={{ cursor: locked ? "default" : "pointer" }}
+              >
+                <div className={`text-[10px] uppercase tracking-[0.18em] font-semibold mb-1 transition-colors duration-200 ${selected === opt ? "text-violet-200" : "text-white/30"}`}>{d.weekday}</div>
+                <div className={`text-3xl font-black leading-none transition-colors duration-200 ${selected === opt ? "text-white" : "text-white/40"}`}>
+                  {isVoting && selected === opt ? <span className="inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : d.day}
+                </div>
+                <div className={`text-xs font-medium mt-1 transition-colors duration-200 ${selected === opt ? "text-fuchsia-200" : "text-white/25"}`}>{d.month} {d.year}</div>
+              </button>
+            </>
+          );
+        })}
       </div>
-
       {selected === null && !isVoting && (
-        <p className="text-center text-white/20 text-xs">
-          Tap a date to cast your vote
-        </p>
-      )}
-      {selected !== null && isVoting && (
-        <p className="text-center text-white/30 text-xs animate-pulse">
-          Submitting your vote…
-        </p>
+        <p className="text-center text-white/20 text-xs">Tap a date to cast your vote</p>
       )}
     </div>
   );
@@ -223,13 +188,15 @@ function DateSwitch({
 /* ── Page ── */
 export default function SharedTaskPage() {
   const { loginWithRedirect, user: authUser, isAuthenticated: isLoggedIn } = useAuth0();
+  const { token: authToken } = useAuth();
+  const cachedUsername = localStorage.getItem("gobento_username");
   const { token } = useParams<{ token: string }>();
   const [task, setTask] = useState<SharedTask | null>(null);
   const [votes, setVotes] = useState<VoteCounts | null>(null);
   const [selected, setSelected] = useState<1 | 2 | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [imgExpanded, setImgExpanded] = useState(false);
   const [error, setError] = useState("");
   const [comments, setComments] = useState<TaskComment[]>([]);
@@ -262,15 +229,6 @@ export default function SharedTaskPage() {
       .finally(() => setIsLoading(false));
   }, [token]);
 
-  // Pre-fill name from Auth0 if logged in
-  useEffect(() => {
-    if (isLoggedIn && authUser) {
-      const name = authUser.nickname || authUser.name || authUser.email || "";
-      setCommentName(name);
-    }
-  }, [isLoggedIn, authUser]);
-
-  // Auto-vote as soon as a date is selected
   const handleSelect = async (option: 1 | 2) => {
     if (!token || isVoting || hasVoted) return;
     setSelected(option);
@@ -288,6 +246,14 @@ export default function SharedTaskPage() {
       setIsVoting(false);
     }
   };
+
+  // Pre-fill name from Auth0 if logged in
+  useEffect(() => {
+    if (isLoggedIn && authUser) {
+      const name = authUser.nickname || authUser.name || authUser.email || "";
+      setCommentName(name);
+    }
+  }, [isLoggedIn, authUser]);
 
   const handleComment = async () => {
     if (!token || !commentText.trim() || isPostingComment) return;
@@ -314,6 +280,8 @@ export default function SharedTaskPage() {
   const winner: 1 | 2 | null =
     votes && votes.total > 0 ? (votes[1] >= votes[2] ? 1 : 2) : null;
 
+  const isOwner = isLoggedIn && !!authUser?.sub && authUser.sub === task?.userId;
+
   return (
     <>
       <style>{`
@@ -329,63 +297,31 @@ export default function SharedTaskPage() {
         .bg-white\\/8  { background-color: rgba(255,255,255,0.08); }
       `}</style>
 
-      {/* Dashboard-style sticky header */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8 py-3 md:py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0">
-              <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                  />
-                </svg>
-              </div>
-              <Link to="/" className="no-underline">
-                <h1 className="text-white font-bold text-base sm:text-lg md:text-xl flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                  Gobento
-                </h1>
-              </Link>
-            </div>
-
-            {/* Sign up button — same StarBorder as main page */}
-            <StarBorder
-              onClick={() => loginWithRedirect()}
-              className="font-semibold shadow-lg transition-colors duration-300 flex items-center gap-2 sm:gap-2.5 text-base sm:text-lg pr-4"
-              color="#B19EEF"
-              speed="6s"
-              thickness={2}
-              title="Sign up free"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <line x1="19" y1="8" x2="19" y2="14" />
-                <line x1="22" y1="11" x2="16" y2="11" />
-              </svg>
-              <span>Sign up free</span>
-            </StarBorder>
+      {/* Header — mismo que página principal */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
+        <div className="flex items-center justify-between w-full px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <Link to="/" className="no-underline">
+              <h1 className="text-white font-bold text-lg sm:text-xl hover:opacity-80 transition-opacity">Gobento</h1>
+            </Link>
           </div>
+          <div className="flex-shrink-0">
+            <Header
+              token={authToken}
+              API_URL={env.API_URL}
+              showConnections={false}
+              initialDisplayName={cachedUsername || null}
+            />
+          </div>
+        </div>
       </header>
+      {/* Spacer for fixed header — 64px covers single-row header on all breakpoints */}
+      <div aria-hidden="true" style={{ height: 64 }} />
 
-      <div className="relative min-h-screen flex flex-col items-center justify-start px-4 pt-28 pb-16">
+      <div className="relative min-h-screen flex flex-col items-center justify-start px-4 pt-10 pb-16">
 
         {/* Loading */}
         {isLoading && (
@@ -466,7 +402,40 @@ export default function SharedTaskPage() {
                 {/* Poll */}
                 {(task.dateOption1 || task.dateOption2) && (
                   <div className="px-6 py-5 border-b border-white/[0.06] fade-up-2">
-                    {!hasVoted ? (
+                    {isOwner ? (
+                      /* Owner: read-only results */
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-bold text-base">Poll results</p>
+                          <span className="text-[10px] text-violet-300 border border-violet-400/30 rounded-full px-2 py-0.5">your event</span>
+                        </div>
+                        {votes && votes.total > 0 ? (
+                          <>
+                            {([1, 2] as const).map((opt) => {
+                              const dateStr = opt === 1 ? task.dateOption1 : task.dateOption2;
+                              if (!dateStr) return null;
+                              const parsed = formatDateShort(dateStr);
+                              return (
+                                <ResultBar
+                                  key={opt}
+                                  label={`${parsed.weekday}, ${parsed.month} ${parsed.day}`}
+                                  count={votes[opt]}
+                                  total={votes.total}
+                                  isSelected={false}
+                                  isWinner={winner === opt}
+                                />
+                              );
+                            })}
+                            <p className="text-center text-white/20 text-xs">
+                              {votes.total} {votes.total === 1 ? "person" : "people"} responded
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-white/30 text-xs mt-2">No votes yet</p>
+                        )}
+                      </div>
+                    ) : !hasVoted ? (
+                      /* Guest / non-owner: voting UI */
                       <>
                         <p className="text-white font-bold text-base mb-1">When works for you?</p>
                         <p className="text-white/30 text-xs mb-4">Tap a date — your vote is final</p>
@@ -480,6 +449,7 @@ export default function SharedTaskPage() {
                         {error && <p className="text-red-400 text-xs text-center mt-3">{error}</p>}
                       </>
                     ) : (
+                      /* After voting: show results */
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 p-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
                           <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">

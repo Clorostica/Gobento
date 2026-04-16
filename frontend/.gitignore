@@ -39,3 +39,4 @@ storybook-static/
 # Coverage reports
 coverage/
 
+.vercel

@@ -154,31 +154,29 @@ router.get("/search", authenticate, async (req, res) => {
       typeof searchTerm !== "string" ||
       searchTerm.trim() === ""
     ) {
-      // If no search term, return all users (excluding current user)
+      // No search term: return all users that have a username (excluding current user)
       result = await pool.query(
-        `SELECT id, email, username, avatar_url 
-         FROM users 
-         WHERE id != $1
-         ORDER BY username ASC NULLS LAST, email ASC
+        `SELECT id, username, avatar_url
+         FROM users
+         WHERE id != $1 AND username IS NOT NULL
+         ORDER BY username ASC
          LIMIT 100`,
         [sub]
       );
     } else {
-      // Search by username or email (case-insensitive, partial match)
+      // Search by username only (case-insensitive, partial match)
       result = await pool.query(
-        `SELECT id, email, username, avatar_url
+        `SELECT id, username, avatar_url
          FROM users
-         WHERE (LOWER(username) LIKE LOWER($1) OR LOWER(email) LIKE LOWER($1)) AND id != $2
+         WHERE LOWER(username) LIKE LOWER($1) AND id != $2 AND username IS NOT NULL
          ORDER BY
            CASE
              WHEN LOWER(username) LIKE LOWER($3) THEN 1
-             WHEN LOWER(username) LIKE LOWER($1) THEN 2
-             WHEN LOWER(email) LIKE LOWER($1) THEN 3
-             ELSE 4
+             ELSE 2
            END,
-           username ASC NULLS LAST
+           username ASC
          LIMIT 100`,
-        [`%${searchTerm}%`, sub, `${searchTerm}%`]
+        [`%${searchTerm.trim()}%`, sub, `${searchTerm.trim()}%`]
       );
     }
 

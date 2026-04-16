@@ -74,7 +74,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <>
       {filters.map((f) => (
         <button
           key={f.value}
@@ -95,6 +95,6 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
           <span>{f.label}</span>
         </button>
       ))}
-    </div>
+    </>
   );
 }

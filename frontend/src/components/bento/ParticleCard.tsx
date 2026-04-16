@@ -131,42 +131,31 @@ const ParticleCard: React.FC<ParticleCardProps> = ({
 
     const element = cardRef.current;
 
+    const clamp = (val: number, max: number) => Math.max(-max, Math.min(max, val));
+
     const handleMouseEnter = () => {
       isHoveredRef.current = true;
+      element.style.zIndex = "10";
       animateParticles();
-
-      if (enableTilt) {
-        gsap.to(element, {
-          rotateX: 5,
-          rotateY: 5,
-          duration: 0.3,
-          ease: "power2.out",
-          transformPerspective: 1000,
-        });
-      }
     };
 
     const handleMouseLeave = () => {
       isHoveredRef.current = false;
       clearAllParticles();
 
-      if (enableTilt) {
-        gsap.to(element, {
-          rotateX: 0,
-          rotateY: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
-
-      if (enableMagnetism) {
-        gsap.to(element, {
-          x: 0,
-          y: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
+      // Single combined reset — smooth spring return to original position
+      gsap.to(element, {
+        rotateX: 0,
+        rotateY: 0,
+        x: 0,
+        y: 0,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.5)",
+        transformPerspective: 1000,
+        onComplete: () => {
+          element.style.zIndex = "1";
+        },
+      });
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -177,31 +166,24 @@ const ParticleCard: React.FC<ParticleCardProps> = ({
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
+      const normX = (x - centerX) / centerX;
+      const normY = (y - centerY) / centerY;
 
-      if (enableTilt) {
-        const rotateX = ((y - centerY) / centerY) * -10;
-        const rotateY = ((x - centerX) / centerX) * 10;
+      const rotateX = enableTilt ? normY * -8 : 0;
+      const rotateY = enableTilt ? normX * 8 : 0;
+      // Max 6px movement — less than the grid gap so cards never physically cross
+      const magnetX = enableMagnetism ? clamp(normX * centerX * 0.06, 6) : 0;
+      const magnetY = enableMagnetism ? clamp(normY * centerY * 0.06, 6) : 0;
 
-        gsap.to(element, {
-          rotateX,
-          rotateY,
-          duration: 0.1,
-          ease: "power2.out",
-          transformPerspective: 1000,
-        });
-      }
-
-      if (enableMagnetism) {
-        const magnetX = (x - centerX) * 0.05;
-        const magnetY = (y - centerY) * 0.05;
-
-        magnetismAnimationRef.current = gsap.to(element, {
-          x: magnetX,
-          y: magnetY,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
+      magnetismAnimationRef.current = gsap.to(element, {
+        rotateX,
+        rotateY,
+        x: magnetX,
+        y: magnetY,
+        duration: 0.15,
+        ease: "power2.out",
+        transformPerspective: 1000,
+      });
     };
 
     const handleClick = (e: MouseEvent) => {

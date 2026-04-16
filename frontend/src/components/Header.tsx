@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Login from "./Login";
 import Logout from "./Logout";
 import FollowersFollowingPanel from "./FollowersFollowingPanel";
+import NotificationBell from "./NotificationBell";
 import StarBorder from "./StarBorder";
 import { useAuth0 } from "@auth0/auth0-react";
 import type { AuthUser } from "../types/auth/user.types";
-import { useApiClient } from "../hooks";
-import { UsersService } from "../services";
 
 interface HeaderProps {
   token: string | null;
   API_URL: string;
   userId?: string | undefined;
   showConnections?: boolean;
+  initialDisplayName?: string | null;
 }
 
 const buttonBaseClasses =
@@ -23,52 +23,19 @@ const Header = ({
   API_URL,
   userId,
   showConnections = true,
+  initialDisplayName,
 }: HeaderProps) => {
   const { user, isAuthenticated } = useAuth0<AuthUser>();
-  const apiClient = useApiClient();
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
     useState(false);
-  const [username, setUsername] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const loadUsername = async () => {
-      if (!isAuthenticated || !token || userId) {
-        setUsername(null);
-        return;
-      }
-
-      try {
-        apiClient.setToken(token);
-        const usersService = new UsersService(apiClient);
-        const userData = await usersService.getCurrentUser();
-        setUsername(userData.username || null);
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === "object" &&
-          "status" in error &&
-          error.status === 401
-        ) {
-          setUsername(null);
-          return;
-        }
-        if (error instanceof Error && !error.message.includes("401")) {
-          console.error("Error loading username:", error);
-        }
-        setUsername(null);
-      }
-    };
-
-    if (isAuthenticated && token) {
-      loadUsername();
-    } else {
-      setUsername(null);
-    }
-  }, [isAuthenticated, token, userId, apiClient]);
-
-  const displayName = username || user?.name || user?.email || "";
-  const avatarLetter = (displayName || "U").charAt(0).toUpperCase();
+  // When authenticated, only use the username passed from parent (never Auth0's display name)
+  // This prevents the "Claudia Saez" → "claudia" flash caused by Auth0 name vs DB username
+  const displayName = isAuthenticated
+    ? (initialDisplayName || "")
+    : (user?.name || user?.email || "");
+  const avatarLetter = (initialDisplayName || user?.name || "U").charAt(0).toUpperCase();
 
   return (
     <>
@@ -94,6 +61,9 @@ const Header = ({
               </StarBorder>
             )}
 
+            {/* Notification Bell */}
+            <NotificationBell token={token} API_URL={API_URL} />
+
             {/* User Button con dropdown - REEMPLAZA al Sign In */}
             <div className="relative">
               <StarBorder
@@ -116,7 +86,7 @@ const Header = ({
                   </div>
                 )}
                 {displayName && (
-                  <span className="truncate max-w-[120px]">{displayName}</span>
+                  <span className="truncate w-[90px] sm:w-[110px] text-left">{displayName}</span>
                 )}
               </StarBorder>
 

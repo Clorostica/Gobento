@@ -4,6 +4,7 @@ import users from "./users.js";
 import friends from "./friends.js";
 import uploadthing from "./uploadthing.js";
 import share from "./share.js";
+import notifications from "./notifications.js";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/users", users);
 router.use("/friends", friends);
 router.use("/api/uploadthing", uploadthing);
 router.use("/share", share);
+router.use("/notifications", notifications);
 
 export default router;

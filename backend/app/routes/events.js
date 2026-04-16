@@ -473,6 +473,23 @@ router.post("/follow/:userId", authenticate, async (req, res) => {
       id: insertResult.rows[0]?.id,
     });
 
+    // Notify the followed user
+    try {
+      const actorResult = await pool.query(
+        "SELECT username, email FROM users WHERE id = $1",
+        [sub]
+      );
+      const actor = actorResult.rows[0];
+      const actorName = actor?.username || actor?.email || "Someone";
+      await pool.query(
+        `INSERT INTO notifications (user_id, actor_id, actor_name, type)
+         VALUES ($1, $2, $3, 'follow')`,
+        [userId, sub, actorName]
+      );
+    } catch (notifErr) {
+      console.error("Error creating follow notification:", notifErr);
+    }
+
     res.json({
       message: "Successfully followed user",
       success: true,

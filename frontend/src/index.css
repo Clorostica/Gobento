@@ -16,6 +16,12 @@ body,
   color: white;
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-color: #392e4e black;
+  scrollbar-width: thin;
+}
+
 body {
   font-family: 'Poppins', sans-serif;
 }
@@ -38,6 +44,21 @@ body {
 
 .button-primary:active {
   transform: translateY(0);
+}
+
+/* Global page scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: black;
+}
+::-webkit-scrollbar-thumb {
+  background: #392e4e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a855f7;
 }
 
 /* Custom scrollbar styles for emoji picker */

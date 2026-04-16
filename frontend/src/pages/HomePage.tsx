@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -47,12 +47,15 @@ export default function HomePage() {
   >((location.state as any)?.filter || "all");
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [cachedUsername] = useState<string | null>(() => localStorage.getItem('gobento_username'));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [searchUsers, setSearchUsers] = useState<Profile[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [isNewlyCreatedUser, setIsNewlyCreatedUser] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   const eventsService = useMemo(
     () => new EventsService(apiClient),
@@ -174,6 +177,19 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
+  // Keep header height in sync so the spacer is always exact
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    // Read immediately (synchronous, before first paint)
+    setHeaderHeight(el.offsetHeight);
+    const observer = new ResizeObserver(() => {
+      setHeaderHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (searchType !== "users" || !token) {
       setSearchUsers([]);
@@ -197,14 +213,11 @@ export default function HomePage() {
         if (response.ok) {
           const data = await response.json();
           const users = (data.users || [])
-            .filter((u: any) => u.id !== user?.sub)
+            .filter((u: any) => u.id !== user?.sub && u.username)
             .map((u: any) => ({
               id: u.id,
-              email: u.email,
-              username: u.username || null,
-              name: u.name || null,
+              username: u.username as string,
               avatarUrl: u.avatar_url || u.avatarUrl || null,
-              isPrivate: u.isPrivate || false,
             }));
           setSearchUsers(users);
         } else {
@@ -250,6 +263,9 @@ export default function HomePage() {
             (userData as any).avatar_url || (userData as any).avatarUrl || null,
           isPrivate: userData.isPrivate ?? false,
         });
+        if (userData.username) {
+          localStorage.setItem('gobento_username', userData.username);
+        }
 
         if (!userData.username) {
           setShowUsernameModal(true);
@@ -289,6 +305,9 @@ export default function HomePage() {
                 }
               : null
           );
+          if (updatedUser.username) {
+            localStorage.setItem('gobento_username', updatedUser.username);
+          }
           setShowUsernameModal(false);
           setIsNewlyCreatedUser(false);
         }
@@ -436,62 +455,35 @@ export default function HomePage() {
           flexDirection: "column",
         }}
       >
-        <header className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
-          <div className="w-full sm:max-w-7xl sm:mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-1 sm:py-2 md:py-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-2 sm:mb-0">
-              <div className="flex flex-row items-center justify-between w-full sm:order-1 gap-1.5 sm:gap-3 md:gap-4 lg:gap-6">
-                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4">
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                        />
-                      </svg>
-                    </div>
-
-                    <Link to="/" className="no-underline">
-                      <h1 className="text-white font-bold text-base sm:text-lg md:text-xl flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                        Gobento
-                      </h1>
-                    </Link>
-                  </div>
-                  <div className="hidden sm:block sm:ml-2 md:ml-3 lg:ml-4">
-                    <Search
-                      search={search}
-                      setSearch={setSearch}
-                      searchType={searchType}
-                      onSearchTypeChange={setSearchType}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0">
-                  <Header token={token} API_URL={env.API_URL} />
-                </div>
-              </div>
-
-              <div className="w-full sm:hidden">
-                <Search
-                  search={search}
-                  setSearch={setSearch}
-                  searchType={searchType}
-                  onSearchTypeChange={setSearchType}
-                />
+        <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
+          {/* Main row */}
+          <div className="flex items-center justify-between w-full px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <Link to="/" className="no-underline">
+                <h1 className="text-white font-bold text-lg sm:text-xl flex-shrink-0 hover:opacity-80 transition-opacity">Gobento</h1>
+              </Link>
+              {/* Search — visible solo en sm+ */}
+              <div className="hidden sm:block ml-2 sm:ml-3">
+                <Search search={search} setSearch={setSearch} searchType={searchType} onSearchTypeChange={setSearchType} />
               </div>
             </div>
+            {/* User */}
+            <div className="flex-shrink-0">
+              <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} />
+            </div>
+          </div>
+          {/* Search mobile — segunda fila solo en mobile */}
+          <div className="sm:hidden px-4 pb-3">
+            <Search search={search} setSearch={setSearch} searchType={searchType} onSearchTypeChange={setSearchType} />
           </div>
         </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-20 md:pt-28 pb-8 flex-grow">
+        {/* Spacer — exact header height so content is never hidden under the fixed header */}
+        <div aria-hidden="true" style={{ height: headerHeight, flexShrink: 0 }} />
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -519,25 +511,18 @@ export default function HomePage() {
                         {user.avatarUrl ? (
                           <img
                             src={user.avatarUrl}
-                            alt={user.username || user.email}
+                            alt={user.username || ""}
                             className="w-12 h-12 rounded-full object-cover border-2 border-white/20"
                           />
                         ) : (
                           <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {user.username
-                              ? user.username.charAt(0).toUpperCase()
-                              : user.email.charAt(0).toUpperCase()}
+                            {(user.username || "?").charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold truncate">
-                            {user.username || user.email}
+                            {user.username}
                           </p>
-                          {user.username && (
-                            <p className="text-gray-400 text-sm truncate">
-                              {user.email}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -562,31 +547,27 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", alignItems: "start", marginBottom: "1.5rem" }}>
+              <div className="flex flex-wrap items-center gap-3 mb-6">
                 <EventFilter filter={filter} setFilter={setFilter} />
-                <div>
-                  <button
-                    onClick={() => {
-                      const status =
-                        filter === "all" ||
-                        filter === "liked" ||
-                        filter === "friends"
-                          ? "planned"
-                          : filter;
-                      handleAddEvent(
-                        status as "planned" | "upcoming" | "happened" | "private"
-                      );
-                    }}
-                    className="px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl text-lg sm:text-base font-bold transition-all duration-300 transform hover:scale-110 active:scale-95 whitespace-nowrap flex items-center gap-2 border-2 border-dashed border-purple-400 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white hover:from-purple-500/50 hover:to-pink-500/50 hover:border-purple-300 backdrop-blur-sm shadow-lg shadow-purple-500/20"
-                    style={{
-                      backgroundColor: "#060010",
-                    }}
-                    title="Add New Event"
-                  >
-                    <span className="text-2xl sm:text-xl flex-shrink-0">+</span>
-                    <span>Add Event</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    const status =
+                      filter === "all" ||
+                      filter === "liked" ||
+                      filter === "friends"
+                        ? "planned"
+                        : filter;
+                    handleAddEvent(
+                      status as "planned" | "upcoming" | "happened" | "private"
+                    );
+                  }}
+                  className="ml-auto flex-shrink-0 px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl text-lg sm:text-base font-bold transition-all duration-300 hover:scale-110 active:scale-95 whitespace-nowrap flex items-center gap-2 border-2 border-dashed border-purple-400 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white hover:from-purple-500/50 hover:to-pink-500/50 hover:border-purple-300 backdrop-blur-sm shadow-lg shadow-purple-500/20"
+                  style={{ backgroundColor: "#060010" }}
+                  title="Add New Event"
+                >
+                  <span className="text-2xl sm:text-xl flex-shrink-0">+</span>
+                  <span>Add Event</span>
+                </button>
               </div>
               <TodoList
                 isAuthenticated={isAuthenticated}

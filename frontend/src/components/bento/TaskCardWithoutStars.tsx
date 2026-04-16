@@ -45,6 +45,10 @@ const TaskCardWithoutStars: React.FC<TaskCardWithoutStarsProps> = ({
 
     const el = cardRef.current;
 
+    const clamp = (val: number, max: number) => Math.max(-max, Math.min(max, val));
+
+    el.style.zIndex = "1";
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!enableTilt && !enableMagnetism) return;
 
@@ -53,51 +57,45 @@ const TaskCardWithoutStars: React.FC<TaskCardWithoutStarsProps> = ({
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
+      const normX = (x - centerX) / centerX;
+      const normY = (y - centerY) / centerY;
 
-      if (enableTilt) {
-        const rotateX = ((y - centerY) / centerY) * -10;
-        const rotateY = ((x - centerX) / centerX) * 10;
-        gsap.to(el, {
-          rotateX,
-          rotateY,
-          duration: 0.1,
-          ease: "power2.out",
-          transformPerspective: 1000,
-        });
-      }
+      const rotateX = enableTilt ? normY * -8 : 0;
+      const rotateY = enableTilt ? normX * 8 : 0;
+      const magnetX = enableMagnetism ? clamp(normX * centerX * 0.06, 6) : 0;
+      const magnetY = enableMagnetism ? clamp(normY * centerY * 0.06, 6) : 0;
 
-      if (enableMagnetism) {
-        const magnetX = (x - centerX) * 0.05;
-        const magnetY = (y - centerY) * 0.05;
-        gsap.to(el, {
-          x: magnetX,
-          y: magnetY,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
+      gsap.to(el, {
+        rotateX,
+        rotateY,
+        x: magnetX,
+        y: magnetY,
+        duration: 0.15,
+        ease: "power2.out",
+        transformPerspective: 1000,
+      });
+    };
+
+    const handleMouseEnter = () => {
+      el.style.zIndex = "10";
     };
 
     const handleMouseLeave = () => {
       if (shouldDisableAnimations) return;
 
-      if (enableTilt) {
-        gsap.to(el, {
-          rotateX: 0,
-          rotateY: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
-
-      if (enableMagnetism) {
-        gsap.to(el, {
-          x: 0,
-          y: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
+      // Spring return to exact original position
+      gsap.to(el, {
+        rotateX: 0,
+        rotateY: 0,
+        x: 0,
+        y: 0,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.5)",
+        transformPerspective: 1000,
+        onComplete: () => {
+          el.style.zIndex = "1";
+        },
+      });
     };
 
     const handleClick = (e: MouseEvent) => {
@@ -145,11 +143,13 @@ const TaskCardWithoutStars: React.FC<TaskCardWithoutStarsProps> = ({
       );
     };
 
+    el.addEventListener("mouseenter", handleMouseEnter);
     el.addEventListener("mousemove", handleMouseMove);
     el.addEventListener("mouseleave", handleMouseLeave);
     el.addEventListener("click", handleClick);
 
     return () => {
+      el.removeEventListener("mouseenter", handleMouseEnter);
       el.removeEventListener("mousemove", handleMouseMove);
       el.removeEventListener("mouseleave", handleMouseLeave);
       el.removeEventListener("click", handleClick);

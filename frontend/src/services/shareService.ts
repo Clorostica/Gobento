@@ -3,6 +3,7 @@ import { convertKeysToCamelCase } from "@/utils/apiClient";
 
 export interface SharedTask {
   id: string;
+  userId?: string | null;
   title?: string | null;
   text?: string | null;
   status: string;

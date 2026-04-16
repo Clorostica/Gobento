@@ -1,32 +1,38 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface TooltipProps {
   label: string;
   children: React.ReactNode;
-  position?: "bottom" | "left";
+  position?: "bottom" | "top";
 }
 
 const Tooltip = ({ label, children, position = "bottom" }: TooltipProps) => {
-  const pos =
-    position === "left"
-      ? "right-full top-1/2 -translate-y-1/2 mr-2"
+  const [visible, setVisible] = useState(false);
+
+  const posClass =
+    position === "top"
+      ? "bottom-full left-1/2 -translate-x-1/2 mb-2"
       : "top-full left-1/2 -translate-x-1/2 mt-2";
 
   return (
-    <div className="relative group/tooltip inline-flex">
+    <div
+      className="relative inline-flex"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
       {children}
-      <span
-        className={`
-          pointer-events-none absolute ${pos} z-[100]
-          px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap
-          bg-black/90 text-white border border-purple-900/50 shadow-lg
-          opacity-0 scale-95
-          group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100
-          transition-all duration-150
-        `}
-      >
-        {label}
-      </span>
+      {visible && (
+        <span
+          className={`
+            pointer-events-none absolute ${posClass} z-[200]
+            px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap
+            bg-black/90 text-white border border-purple-900/50 shadow-lg
+            animate-fade-in
+          `}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 };

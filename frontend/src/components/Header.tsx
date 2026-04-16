@@ -46,7 +46,7 @@ const Header = ({
           <>
             {/* Connections Button */}
             {showConnections && (
-              <Tooltip label="Connections">
+              <Tooltip label="Friends & connections">
                 <StarBorder
                   onClick={() => setIsFollowersFollowingPanelOpen(true)}
                   className={`${buttonBaseClasses} star-border-container`}
@@ -68,7 +68,7 @@ const Header = ({
 
             {/* User Button con dropdown */}
             <div className="relative">
-              <Tooltip label={displayName ? `@${displayName}` : "Profile"}>
+              <Tooltip label={displayName ? `Signed in as @${displayName}` : "Your profile"}>
                 <StarBorder
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className={`${buttonBaseClasses} star-border-container cursor-pointer`}

@@ -86,7 +86,7 @@ const NotificationBell = ({ token, API_URL }: NotificationBellProps) => {
 
   return (
     <div ref={bellRef} className="relative">
-      <Tooltip label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? "s" : ""}` : "Notifications"}>
+      <Tooltip label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? "s" : ""}` : "Notifications"} position="bottom">
       <StarBorder
         onClick={handleOpen}
         className="flex items-center gap-1.5 font-semibold shadow-lg transition-colors duration-300 text-sm px-3 py-2 min-h-[38px] star-border-container cursor-pointer"

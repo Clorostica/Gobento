@@ -55,7 +55,6 @@ export default function HomePage() {
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [isNewlyCreatedUser, setIsNewlyCreatedUser] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   const eventsService = useMemo(
     () => new EventsService(apiClient),
@@ -177,15 +176,17 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
-  // Keep header height in sync so the spacer is always exact
+  // Keep --header-h CSS variable in sync with real header height
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
-    // Read immediately (synchronous, before first paint)
-    setHeaderHeight(el.offsetHeight);
-    const observer = new ResizeObserver(() => {
-      setHeaderHeight(el.offsetHeight);
-    });
+    const update = () => {
+      if (el.offsetHeight > 0) {
+        document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+      }
+    };
+    update();
+    const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -481,8 +482,8 @@ export default function HomePage() {
             <Search search={search} setSearch={setSearch} searchType={searchType} onSearchTypeChange={setSearchType} />
           </div>
         </header>
-        {/* Spacer — exact header height so content is never hidden under the fixed header */}
-        <div aria-hidden="true" style={{ height: headerHeight, flexShrink: 0 }} />
+        {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
+        <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">

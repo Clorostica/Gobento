@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --header-h: 72px; /* safe default; updated by JS ResizeObserver */
+}
+
 html,
 body,
 #root {

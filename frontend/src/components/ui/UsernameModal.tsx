@@ -1,4 +1,5 @@
-import { useState, FormEvent, useRef } from "react";
+import { useState, useRef } from "react";
+import type { FormEvent } from "react";
 import { X, CheckCircle, AlertCircle, Upload, User } from "lucide-react";
 import { uploadFile } from "../../utils/uploadthing";
 

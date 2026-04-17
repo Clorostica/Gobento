@@ -54,11 +54,7 @@ const ParticleCard: React.FC<ParticleCardProps> = ({
 
     const { width, height } = cardRef.current.getBoundingClientRect();
     memoizedParticles.current = Array.from({ length: particleCount }, () =>
-      createParticleElement(
-        Math.random() * width,
-        Math.random() * height,
-        glowColor
-      )
+      createParticleElement(glowColor)
     );
     particlesInitialized.current = true;
   }, [particleCount, glowColor]);

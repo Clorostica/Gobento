@@ -461,54 +461,62 @@ export default function HomePage() {
       >
         <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md">
           {/* Main row */}
-          <div className="flex items-center justify-between w-full px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4">
-            {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-4 w-full px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4">
+
+            {/* Brand — isolated, room to breathe */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
               <Link to="/" className="no-underline">
                 <h1 className="text-white font-bold text-lg sm:text-xl flex-shrink-0 hover:opacity-80 transition-opacity">Gobento</h1>
               </Link>
-
-              {/* View switcher — My Events / Friends Feed */}
-              {isAuthenticated && (
-                <div className="hidden sm:flex items-center gap-2 ml-1">
-                  <Tooltip label="My Events" position="bottom">
-                    <StarBorder
-                      onClick={() => { setFilter("all"); setSearchType("events"); }}
-                      className="flex items-center justify-center font-semibold shadow-lg transition-colors duration-300 px-3 py-2 min-h-[38px] star-border-container cursor-pointer"
-                      color={filter !== "friends" && searchType === "events" ? "#FB923C" : "#B19EEF"}
-                      speed="6s"
-                      thickness={2}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </StarBorder>
-                  </Tooltip>
-                  <Tooltip label="Friends' Events" position="bottom">
-                    <StarBorder
-                      onClick={() => { setFilter("friends"); setSearchType("events"); }}
-                      className="flex items-center justify-center font-semibold shadow-lg transition-colors duration-300 px-3 py-2 min-h-[38px] star-border-container cursor-pointer"
-                      color={filter === "friends" ? "#FB923C" : "#B19EEF"}
-                      speed="6s"
-                      thickness={2}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </StarBorder>
-                  </Tooltip>
-                </div>
-              )}
-
-              {/* Search — visible solo en sm+ */}
-              <div className="hidden sm:flex items-center gap-2 ml-1">
-                <Search search={search} setSearch={setSearch} searchType={searchType} />
-              </div>
             </div>
-            {/* User */}
+
+            {/* Divider */}
+            <div className="hidden sm:block h-6 w-px flex-shrink-0" style={{ background: "rgba(255,255,255,0.12)" }} />
+
+            {/* Primary nav — My Events / Friends */}
+            {isAuthenticated && (
+              <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                <Tooltip label="My Events" position="bottom">
+                  <StarBorder
+                    onClick={() => { setFilter("all"); setSearchType("events"); }}
+                    className="flex items-center justify-center font-semibold shadow-lg transition-colors duration-300 px-3 py-2 min-h-[38px] star-border-container cursor-pointer"
+                    color={filter !== "friends" && searchType === "events" ? "#FB923C" : "#B19EEF"}
+                    speed="6s"
+                    thickness={2}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </StarBorder>
+                </Tooltip>
+                <Tooltip label="Friends' Events" position="bottom">
+                  <StarBorder
+                    onClick={() => { setFilter("friends"); setSearchType("events"); }}
+                    className="flex items-center justify-center font-semibold shadow-lg transition-colors duration-300 px-3 py-2 min-h-[38px] star-border-container cursor-pointer"
+                    color={filter === "friends" ? "#FB923C" : "#B19EEF"}
+                    speed="6s"
+                    thickness={2}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </StarBorder>
+                </Tooltip>
+              </div>
+            )}
+
+            {/* Search — grows to fill remaining space */}
+            <div className="hidden sm:block flex-1 min-w-0 max-w-sm">
+              <Search search={search} setSearch={setSearch} searchType={searchType} />
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1 sm:flex-none" />
+
+            {/* User actions — Notifications · Connections · Profile */}
             <div className="flex-shrink-0">
               <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} />
             </div>

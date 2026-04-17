@@ -549,12 +549,11 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters */}
-              <div className="w-full px-4 mb-10">
+              {/* Category filters — same width as bento section */}
+              <div className="w-full max-w-[1600px] mx-auto px-4 mb-10">
                 <div className="flex justify-center flex-wrap gap-2.5 overflow-x-auto scrollbar-none pb-1">
                   <EventFilter filter={filter} setFilter={setFilter} />
                 </div>
-                <div className="mt-6 h-px bg-gradient-to-r from-transparent via-purple-900/40 to-transparent" />
               </div>
 
               <FloatingActions

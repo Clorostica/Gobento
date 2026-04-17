@@ -51,7 +51,7 @@ export default function HomePage() {
   >(defaultFilter);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-  const [cachedUsername] = useState<string | null>(() => localStorage.getItem('gobento_username'));
+  const [cachedUsername, setCachedUsername] = useState<string | null>(() => localStorage.getItem('gobento_username'));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [searchUsers, setSearchUsers] = useState<Profile[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
@@ -309,6 +309,7 @@ export default function HomePage() {
           );
           if (updatedUser.username) {
             localStorage.setItem('gobento_username', updatedUser.username);
+            setCachedUsername(updatedUser.username);
           }
           setShowUsernameModal(false);
           setIsNewlyCreatedUser(false);
@@ -499,7 +500,7 @@ export default function HomePage() {
 
             {/* User actions */}
             <div className="flex-shrink-0 mr-0.5 md:mr-0">
-              <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} onEditProfile={() => setShowUsernameModal(true)} />
+              <Header token={token} API_URL={env.API_URL} initialDisplayName={profile?.username || cachedUsername || null} avatarUrl={profile?.avatarUrl || null} onEditProfile={() => setShowUsernameModal(true)} />
             </div>
 
           </div>

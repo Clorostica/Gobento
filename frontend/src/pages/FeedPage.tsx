@@ -71,7 +71,7 @@ export default function FeedPage() {
   const [hasFollowing, setHasFollowing] = useState<boolean | null>(null);
   const [search, setSearch] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [cachedUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
+  const [cachedUsername, setCachedUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -142,7 +142,10 @@ export default function FeedPage() {
           username: updated.username ?? null,
           avatarUrl: (updated as any).avatar_url || (updated as any).avatarUrl || null,
         } : null);
-        if (updated.username) localStorage.setItem("gobento_username", updated.username);
+        if (updated.username) {
+          localStorage.setItem("gobento_username", updated.username);
+          setCachedUsername(updated.username);
+        }
         setShowEditProfile(false);
       }
     } catch (err: unknown) {
@@ -165,7 +168,7 @@ export default function FeedPage() {
     );
   }, [events, search]);
 
-  const displayName = cachedUsername || profile?.username || user?.name || "";
+  const displayName = profile?.username || cachedUsername || user?.name || "";
 
   if (isLoading) return null;
 
@@ -209,7 +212,7 @@ export default function FeedPage() {
           <div className="flex-1 md:hidden" />
 
           <div className="flex-shrink-0 mr-0.5 md:mr-0">
-            <Header token={token} API_URL={env.API_URL} initialDisplayName={displayName || null} onEditProfile={() => setShowEditProfile(true)} />
+            <Header token={token} API_URL={env.API_URL} initialDisplayName={displayName || null} avatarUrl={profile?.avatarUrl || null} onEditProfile={() => setShowEditProfile(true)} />
           </div>
         </div>
 

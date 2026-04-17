@@ -14,6 +14,7 @@ interface HeaderProps {
   userId?: string | undefined;
   showConnections?: boolean;
   initialDisplayName?: string | null;
+  avatarUrl?: string | null;
   onEditProfile?: () => void;
 }
 
@@ -23,6 +24,7 @@ const Header = ({
   userId,
   showConnections = true,
   initialDisplayName,
+  avatarUrl,
   onEditProfile,
 }: HeaderProps) => {
   const { user, isAuthenticated } = useAuth0<AuthUser>();
@@ -73,11 +75,11 @@ const Header = ({
                 speed="6s"
                 thickness={2}
               >
-                {user?.picture ? (
+                {(avatarUrl || user?.picture) ? (
                   <img
-                    src={user.picture}
+                    src={avatarUrl || user!.picture!}
                     alt={displayName || "User"}
-                    className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 flex-shrink-0"
+                    className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 flex-shrink-0 object-cover"
                   />
                 ) : (
                   <div className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">

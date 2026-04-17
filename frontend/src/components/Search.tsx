@@ -3,41 +3,64 @@ import React from "react";
 interface SearchProps {
   search: string;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
-  searchType?: "events" | "users";
+  className?: string;
 }
 
-export default function Search({
-  search,
-  setSearch,
-  searchType = "events",
-}: SearchProps) {
+export default function Search({ search, setSearch, className }: SearchProps) {
   return (
-    <div className="relative flex-1 min-w-0 w-full sm:w-[250px] md:w-[300px] lg:w-[320px]">
-      <div className="absolute left-2 sm:left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-      </div>
+    <div
+      className={className ?? "relative flex-1 min-w-0 w-full sm:w-[250px] md:w-[300px] lg:w-[320px]"}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        borderRadius: "0.75rem",
+        border: "1px solid rgba(255,255,255,0.1)",
+        background: "rgba(255,255,255,0.06)",
+        transition: "border-color 0.2s",
+      }}
+      onFocusCapture={(e) => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(251,146,60,0.5)";
+      }}
+      onBlurCapture={(e) => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.1)";
+      }}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="flex-shrink-0 ml-3 w-3.5 h-3.5"
+        style={{ color: "rgba(255,255,255,0.35)" }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+
       <input
         type="text"
-        placeholder={
-          searchType === "events" ? "Search events..." : "Search users..."
-        }
+        placeholder="Search events & people…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full pl-7 sm:pl-9 md:pl-11 pr-3 sm:pr-4 md:pr-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 hover:shadow-md text-sm sm:text-base text-gray-900"
+        className="flex-1 min-w-0 bg-transparent outline-none px-2.5 py-2 sm:py-2.5 text-sm"
+        style={{ color: "rgba(255,255,255,0.85)", caretColor: "rgba(251,146,60,0.9)" }}
       />
+
+      {search && (
+        <button
+          type="button"
+          onClick={() => setSearch("")}
+          className="flex-shrink-0 mr-2 p-1 rounded-md transition-colors"
+          style={{ color: "rgba(255,255,255,0.3)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+          aria-label="Clear search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

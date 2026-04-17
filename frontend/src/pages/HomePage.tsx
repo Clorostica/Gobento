@@ -40,7 +40,6 @@ export default function HomePage() {
   const defaultFilter = (location.state as any)?.filter || "all";
 
   const [search, setSearch] = useState<string>("");
-  const [searchType, setSearchType] = useState<"events" | "users">("events");
   const [filter, setFilter] = useState<
     | "all"
     | "planned"
@@ -181,23 +180,26 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
-  // Keep --header-h CSS variable in sync with real header height
+  // Keep --header-h CSS variable in sync with real header height.
+  // Must re-run after isLoading resolves, because the real <header> isn't
+  // in the DOM while the loading spinner is shown.
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const update = () => {
-      if (el.offsetHeight > 0) {
-        document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) {
+        document.documentElement.style.setProperty("--header-h", `${h}px`);
       }
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [isLoading]);
 
   useEffect(() => {
-    if (searchType !== "users" || !token) {
+    if (!token || !search.trim()) {
       setSearchUsers([]);
       setIsSearchingUsers(false);
       return;
@@ -206,16 +208,10 @@ export default function HomePage() {
     const searchUsersDebounced = async () => {
       setIsSearchingUsers(true);
       try {
-        const queryParam = search.trim()
-          ? `?q=${encodeURIComponent(search.trim())}`
-          : "?q=";
         const response = await fetch(
-          `${env.API_URL}/users/search${queryParam}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${env.API_URL}/users/search?q=${encodeURIComponent(search.trim())}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
         if (response.ok) {
           const data = await response.json();
           const users = (data.users || [])
@@ -237,9 +233,9 @@ export default function HomePage() {
       }
     };
 
-    const timeoutId = setTimeout(searchUsersDebounced, search.trim() ? 300 : 0);
+    const timeoutId = setTimeout(searchUsersDebounced, 300);
     return () => clearTimeout(timeoutId);
-  }, [search, searchType, token, env.API_URL, user?.sub]);
+  }, [search, token, user?.sub]);
 
   useEffect(() => {
     if (events.length === 0) return;
@@ -481,97 +477,43 @@ export default function HomePage() {
             {isAuthenticated && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Tooltip label="My Events" position="bottom">
-                  <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
+                  <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   </StarBorder>
                 </Tooltip>
-                <Tooltip label="Friends' Feed" position="bottom">
-                  <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <Tooltip label="Home" position="bottom">
+                  <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                   </StarBorder>
                 </Tooltip>
               </div>
             )}
 
-            {/* Search — inline on sm+, not visible in this row on mobile */}
-            <div className="hidden sm:block flex-1 min-w-0 mx-3">
+            {/* Search — inline on md+, hidden here on smaller screens */}
+            <div className="hidden md:block flex-1 min-w-0 mx-3">
               <Search search={search} setSearch={setSearch} />
             </div>
 
-            {/* Spacer — pushes user actions right on mobile */}
-            <div className="flex-1 sm:hidden" />
+            {/* Spacer — only on small screens where search is below */}
+            <div className="flex-1 md:hidden" />
 
             {/* User actions */}
-            <div className="flex-shrink-0">
-              <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} />
+            <div className="flex-shrink-0 mr-0.5 md:mr-0">
+              <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} onEditProfile={() => setShowUsernameModal(true)} />
             </div>
 
           </div>
 
-          {/* ── Mobile: search always visible below the nav row ─────────── */}
-          <div className="sm:hidden px-4 pb-3">
-            <Search search={search} setSearch={setSearch} />
+          {/* ── Search row — only on screens narrower than md ────────── */}
+          <div className="md:hidden px-4 pb-2.5">
+            <Search search={search} setSearch={setSearch} className="relative w-full min-w-0" />
           </div>
 
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
-        <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
-        <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 pt-14 pb-8 flex-grow">
-          {searchType === "users" ? (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                {isSearchingUsers
-                  ? "Loading users..."
-                  : search.trim()
-                  ? `Found ${searchUsers.length} user${
-                      searchUsers.length !== 1 ? "s" : ""
-                    }`
-                  : `All users (${searchUsers.length})`}
-              </h2>
-              {isSearchingUsers ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin"></div>
-                </div>
-              ) : searchUsers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {searchUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      onClick={() => navigate(`/user/${user.id}`)}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/40"
-                    >
-                      <div className="flex items-center gap-3">
-                        {user.avatarUrl ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.username || ""}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white/20"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {(user.username || "?").charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold truncate">
-                            {user.username}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <p className="text-gray-400 text-lg">
-                    {search.trim()
-                      ? `No users found matching "${search}"`
-                      : "No users found in the system yet."}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : isLoadingEvents ? (
+        <div aria-hidden="true" style={{ height: "var(--header-h, 120px)", flexShrink: 0 }} />
+        <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 pt-8 sm:pt-6 pb-8 flex-grow">
+          {isLoadingEvents ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center space-y-4">
                 <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
@@ -580,8 +522,47 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters + Add Event — segmented control track */}
+              {/* People results — shown when search matches users */}
+              {search.trim() && (searchUsers.length > 0 || isSearchingUsers) && (
+                <div className="w-full mb-6 px-4">
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "rgba(167,139,250,0.7)" }}>People</p>
+                  {isSearchingUsers ? (
+                    <div className="flex items-center gap-2" style={{ color: "rgba(255,255,255,0.3)" }}>
+                      <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
+                      <span className="text-sm">Searching…</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {searchUsers.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => navigate(`/user/${u.id}`)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-150"
+                          style={{
+                            background: "rgba(139,92,246,0.08)",
+                            border: "1px solid rgba(139,92,246,0.2)",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.16)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.08)")}
+                        >
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt={u.username || ""} className="w-7 h-7 rounded-full object-cover ring-1 ring-purple-500/30 flex-shrink-0" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                              {(u.username || "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>@{u.username}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Category filters + Add Event */}
               <div className="w-full mb-10 px-4">
+                {/* Filter pills */}
                 <div
                   className="flex items-stretch gap-1 p-1.5 rounded-2xl overflow-x-auto scrollbar-none"
                   style={{
@@ -592,10 +573,8 @@ export default function HomePage() {
                 >
                   <EventFilter filter={filter} setFilter={setFilter} />
 
-                  {/* Divider */}
-                  <div className="w-px self-stretch mx-1 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
-
-                  {/* Add Event — dashed border, sticky-note feel */}
+                  {/* Divider + Add Event — inline on sm+ only */}
+                  <div className="hidden md:block w-px self-stretch mx-1 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
                   <button
                     onClick={() => {
                       const status =
@@ -604,15 +583,32 @@ export default function HomePage() {
                           : filter;
                       handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
                     }}
-                    className="flex-shrink-0 flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-[11px] sm:text-sm font-bold text-purple-300 hover:text-white transition-all duration-200 hover:bg-purple-500/20 active:scale-95"
-                    style={{
-                      border: "2px dashed rgba(168,85,247,0.5)",
-                    }}
+                    className="hidden md:flex flex-shrink-0 items-center gap-1.5 py-2 px-4 rounded-xl text-sm font-bold text-purple-300 hover:text-white transition-all duration-200 hover:bg-purple-500/20 active:scale-95"
+                    style={{ border: "2px dashed rgba(168,85,247,0.5)" }}
                   >
                     <span className="text-base leading-none font-light">+</span>
                     <span className="whitespace-nowrap">Add Event</span>
                   </button>
                 </div>
+
+                {/* Add Event — full-width row below pills on mobile/sm */}
+                <button
+                  onClick={() => {
+                    const status =
+                      filter === "all" || filter === "liked" || filter === "friends"
+                        ? "planned"
+                        : filter;
+                    handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
+                  }}
+                  className="md:hidden w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-purple-300 hover:text-white transition-all duration-200 hover:bg-purple-500/20 active:scale-95"
+                  style={{
+                    border: "2px dashed rgba(168,85,247,0.5)",
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <span className="text-base leading-none font-light">+</span>
+                  <span>Add Event</span>
+                </button>
               </div>
 
               <FloatingActions
@@ -632,7 +628,7 @@ export default function HomePage() {
                 isAuthenticated={isAuthenticated}
                 todos={events}
                 setTodos={setEvents}
-                search={searchType === "events" ? search : ""}
+                search={search}
                 filter={filter}
                 token={token}
                 profileOwnerName={

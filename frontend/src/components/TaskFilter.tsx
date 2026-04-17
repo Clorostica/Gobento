@@ -107,8 +107,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
               } : undefined}
             >
               <span className="text-base leading-none flex-shrink-0">{f.icon}</span>
-              {/* Label hidden on mobile — tooltip covers it */}
-              <span className="hidden sm:inline">{f.label}</span>
+              <span className="hidden lg:inline">{f.label}</span>
             </button>
           </Tooltip>
         );

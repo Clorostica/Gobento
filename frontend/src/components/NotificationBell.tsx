@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import NotificationPanel, { type Notification } from "./NotificationPanel";
 import StarBorder from "./StarBorder";
 import Tooltip from "./Tooltip";
@@ -89,7 +89,7 @@ const NotificationBell = ({ token, API_URL }: NotificationBellProps) => {
       <Tooltip label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? "s" : ""}` : "Notifications"} position="bottom">
       <StarBorder
         onClick={handleOpen}
-        className="flex items-center gap-1.5 font-semibold shadow-lg transition-colors duration-300 text-sm px-3 py-2 min-h-[38px] star-border-container cursor-pointer"
+        className="flex items-center justify-center shadow-lg transition-colors duration-300 px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer"
         color={unreadCount > 0 ? "#c084fc" : "#B19EEF"}
         speed="6s"
         thickness={2}

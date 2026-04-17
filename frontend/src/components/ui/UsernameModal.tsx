@@ -8,9 +8,9 @@ interface UsernameModalProps {
   onClose: () => void;
   onSubmit: (username: string, avatarUrl?: string | null) => Promise<void>;
   isLoading?: boolean;
-  canClose?: boolean; // If false, modal cannot be closed (username is required)
-  onCancel?: () => void; // Function to call when canceling user creation
-  isNewlyCreatedUser?: boolean; // If true, show cancel button
+  canClose?: boolean;
+  onCancel?: () => void;
+  isNewlyCreatedUser?: boolean;
 }
 
 export default function UsernameModal({
@@ -33,31 +33,18 @@ export default function UsernameModal({
   if (!isOpen) return null;
 
   const validateUsername = (value: string): string | null => {
-    if (!value.trim()) {
-      return "Username is required";
-    }
-    if (value.length < 3) {
-      return "Username must be at least 3 characters";
-    }
-    if (value.length > 20) {
-      return "Username must be less than 20 characters";
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return "Username can only contain letters, numbers, and underscores";
-    }
+    if (!value.trim()) return "Username is required";
+    if (value.length < 3) return "Username must be at least 3 characters";
+    if (value.length > 20) return "Username must be less than 20 characters";
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) return "Username can only contain letters, numbers, and underscores";
     return null;
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-
     const validationError = validateUsername(username);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
+    if (validationError) { setError(validationError); return; }
     setIsSubmitting(true);
     try {
       await onSubmit(username.trim(), avatarUrl);
@@ -66,51 +53,27 @@ export default function UsernameModal({
       setAvatarPreview(null);
       setError(null);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else if (typeof err === "object" && err !== null && "message" in err) {
-        setError(String(err.message));
-      } else {
-        setError("Failed to set username. Please try again.");
-      }
+      if (err instanceof Error) setError(err.message);
+      else if (typeof err === "object" && err !== null && "message" in err) setError(String(err.message));
+      else setError("Failed to set username. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (value: string) => {
-    setUsername(value);
-    setError(null);
-  };
+  const handleChange = (value: string) => { setUsername(value); setError(null); };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size must be less than 5MB");
-      return;
-    }
-
+    if (!file.type.startsWith("image/")) { setError("Please select a valid image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Image size must be less than 5MB"); return; }
     setIsUploadingAvatar(true);
     setError(null);
-
     try {
-      // Create preview
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
       reader.readAsDataURL(file);
-
-      // Upload to uploadthing
       const uploadedUrl = await uploadFile(file);
       setAvatarUrl(uploadedUrl);
     } catch (err) {
@@ -126,30 +89,38 @@ export default function UsernameModal({
   const handleRemoveAvatar = () => {
     setAvatarUrl(null);
     setAvatarPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div
+        className="max-w-md w-full rounded-2xl shadow-2xl p-6 space-y-6 animate-in fade-in zoom-in duration-200"
+        style={{
+          background: "rgba(5,0,20,0.97)",
+          border: "1px solid rgba(139,92,246,0.25)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04)",
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isNewlyCreatedUser ? "Welcome! Set Up Your Profile" : "Set Up Your Profile"}
+            <h2 className="text-xl font-bold text-white">
+              {isNewlyCreatedUser ? "Welcome! Set Up Your Profile" : "Edit Profile"}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {isNewlyCreatedUser 
+            <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+              {isNewlyCreatedUser
                 ? "Add a username and avatar to complete your account setup"
-                : "Choose a username and add your avatar"}
+                : "Update your username and profile picture"}
             </p>
           </div>
           {canClose && !isSubmitting && !isLoading && (
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: "rgba(255,255,255,0.4)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -158,35 +129,37 @@ export default function UsernameModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Avatar Upload */}
           <div>
-            <label
-              htmlFor="avatar"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Avatar (Optional)
+            <label className="block text-sm font-medium mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+              Profile Picture (Optional)
             </label>
             <div className="flex items-center gap-4">
               {avatarPreview ? (
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <img
                     src={avatarPreview}
                     alt="Avatar preview"
-                    className="w-20 h-20 rounded-full object-cover border-2 border-indigo-500"
+                    className="w-18 h-18 rounded-full object-cover"
+                    style={{ width: 72, height: 72, border: "2px solid rgba(139,92,246,0.6)" }}
                   />
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-white transition-colors"
+                    style={{ background: "rgba(239,68,68,0.9)" }}
                     title="Remove avatar"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border-2 border-gray-300">
-                  <User className="w-10 h-10 text-white" />
+                <div
+                  className="rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ width: 72, height: 72, background: "rgba(139,92,246,0.15)", border: "2px solid rgba(139,92,246,0.3)" }}
+                >
+                  <User className="w-8 h-8" style={{ color: "rgba(139,92,246,0.7)" }} />
                 </div>
               )}
               <div className="flex-1">
@@ -199,51 +172,36 @@ export default function UsernameModal({
                   disabled={isSubmitting || isLoading || isUploadingAvatar}
                   className="hidden"
                 />
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="avatar"
-                    className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors ${
-                      isSubmitting || isLoading || isUploadingAvatar
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    {isUploadingAvatar ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm text-gray-700">
-                          Uploading...
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">
-                          {avatarPreview ? "Change Avatar" : "Upload Avatar"}
-                        </span>
-                      </>
-                    )}
-                  </label>
-                  {avatarPreview && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      disabled={isSubmitting || isLoading || isUploadingAvatar}
-                      className="px-4 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Cancel
-                    </button>
+                <label
+                  htmlFor="avatar"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer transition-colors text-sm font-medium"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    color: "rgba(255,255,255,0.7)",
+                    opacity: isSubmitting || isLoading || isUploadingAvatar ? 0.5 : 1,
+                    cursor: isSubmitting || isLoading || isUploadingAvatar ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                      <span>Uploading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>{avatarPreview ? "Change Photo" : "Upload Photo"}</span>
+                    </>
                   )}
-                </div>
+                </label>
               </div>
             </div>
           </div>
 
+          {/* Username */}
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="username" className="block text-sm font-medium mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
               Username
             </label>
             <div className="relative">
@@ -254,11 +212,13 @@ export default function UsernameModal({
                 onChange={(e) => handleChange(e.target.value)}
                 disabled={isSubmitting || isLoading}
                 placeholder="e.g., johndoe123"
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                  error
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-                } disabled:bg-gray-50 disabled:cursor-not-allowed`}
+                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-all"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: `1px solid ${error ? "rgba(239,68,68,0.6)" : "rgba(139,92,246,0.3)"}`,
+                  color: "rgba(255,255,255,0.9)",
+                  caretColor: "rgba(139,92,246,0.9)",
+                }}
                 autoFocus
                 minLength={3}
                 maxLength={20}
@@ -266,29 +226,33 @@ export default function UsernameModal({
               />
               {username && !error && validateUsername(username) === null && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-5 h-5" style={{ color: "rgba(52,211,153,0.9)" }} />
                 </div>
               )}
             </div>
             {error && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-                <AlertCircle className="w-4 h-4" />
+              <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: "rgba(248,113,113,0.9)" }}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
-            <p className="mt-2 text-xs text-gray-500">
-              Only letters, numbers, and underscores. 3-20 characters.
+            <p className="mt-1.5 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+              Letters, numbers, and underscores only. 3–20 characters.
             </p>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-1">
             {isNewlyCreatedUser && onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
                 disabled={isSubmitting || isLoading}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "rgba(255,255,255,0.6)",
+                }}
               >
                 Cancel
               </button>
@@ -296,17 +260,22 @@ export default function UsernameModal({
             <button
               type="submit"
               disabled={isSubmitting || isLoading || !username.trim()}
-              className={`${
-                isNewlyCreatedUser && onCancel ? "flex-1" : "w-full"
-              } bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
+              className={`${isNewlyCreatedUser && onCancel ? "flex-1" : "w-full"} py-2.5 px-4 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.8), rgba(168,85,247,0.8))",
+                border: "1px solid rgba(139,92,246,0.4)",
+                boxShadow: "0 4px 16px rgba(124,58,237,0.25)",
+              }}
             >
               {isSubmitting || isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Setting up...
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving…
                 </span>
-              ) : (
+              ) : isNewlyCreatedUser ? (
                 "Continue"
+              ) : (
+                "Save Changes"
               )}
             </button>
           </div>

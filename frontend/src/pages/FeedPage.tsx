@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useAuth, useApiClient } from "../hooks";
@@ -7,6 +7,8 @@ import Header from "../components/Header";
 import Search from "../components/Search";
 import StarBorder from "../components/StarBorder";
 import Tooltip from "../components/Tooltip";
+import { UsernameModal } from "../components/ui";
+import { UsersService } from "../services";
 
 interface FeedEvent {
   id: string;
@@ -71,6 +73,10 @@ export default function FeedPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cachedUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  const usersService = useMemo(() => new UsersService(apiClient), [apiClient]);
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
@@ -79,16 +85,18 @@ export default function FeedPage() {
   }, []);
 
   // Update --header-h CSS var for layout spacer
-  useEffect(() => {
-    if (!headerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      document.documentElement.style.setProperty("--header-h", `${entry.contentRect.height}px`);
-    });
-    obs.observe(headerRef.current);
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) document.documentElement.style.setProperty("--header-h", `${h}px`);
+    };
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [isLoading]);
 
   const loadFeed = useCallback(async () => {
     if (!token) return;
@@ -123,6 +131,27 @@ export default function FeedPage() {
       loadProfile();
     }
   }, [isAuthenticated, token, loadFeed, loadProfile]);
+
+  const handleUsernameSubmit = useCallback(async (username: string, avatarUrl?: string | null) => {
+    setIsUpdatingProfile(true);
+    try {
+      const updated = await usersService.updateUsername(username, avatarUrl);
+      if (updated.id) {
+        setProfile((prev) => prev ? {
+          ...prev,
+          username: updated.username ?? null,
+          avatarUrl: (updated as any).avatar_url || (updated as any).avatarUrl || null,
+        } : null);
+        if (updated.username) localStorage.setItem("gobento_username", updated.username);
+        setShowEditProfile(false);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) throw err;
+      throw new Error("Failed to update profile. Please try again.");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  }, [usersService]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return events;
@@ -159,39 +188,41 @@ export default function FeedPage() {
           {isAuthenticated && (
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <Tooltip label="My Events" position="bottom">
-                <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
+                <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                 </StarBorder>
               </Tooltip>
-              <Tooltip label="Friends' Feed" position="bottom">
-                <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <Tooltip label="Home" position="bottom">
+                <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                 </StarBorder>
               </Tooltip>
             </div>
           )}
 
-          <div className="hidden sm:block flex-1 min-w-0 mx-3">
+          {/* Search — inline on md+, hidden here on smaller screens */}
+          <div className="hidden md:block flex-1 min-w-0 mx-3">
             <Search search={search} setSearch={setSearch} />
           </div>
 
-          <div className="flex-1 sm:hidden" />
+          {/* Spacer — only on small screens where search is below */}
+          <div className="flex-1 md:hidden" />
 
-          <div className="flex-shrink-0">
-            <Header token={token} API_URL={env.API_URL} initialDisplayName={displayName || null} />
+          <div className="flex-shrink-0 mr-0.5 md:mr-0">
+            <Header token={token} API_URL={env.API_URL} initialDisplayName={displayName || null} onEditProfile={() => setShowEditProfile(true)} />
           </div>
         </div>
 
-        {/* Mobile search row */}
-        <div className="sm:hidden px-4 pb-3">
-          <Search search={search} setSearch={setSearch} />
+        {/* Search row — only on screens narrower than md */}
+        <div className="md:hidden px-4 pb-2.5">
+          <Search search={search} setSearch={setSearch} className="relative w-full min-w-0" />
         </div>
       </header>
 
-      <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
+      <div aria-hidden="true" style={{ height: "var(--header-h, 120px)", flexShrink: 0 }} />
 
       {/* ── Main content ──────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-8">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-7 sm:pt-5 pb-8">
 
         {/* Not authenticated */}
         {!isAuthenticated && (
@@ -313,6 +344,14 @@ export default function FeedPage() {
           </div>
         )}
       </main>
+
+      <UsernameModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        onSubmit={handleUsernameSubmit}
+        isLoading={isUpdatingProfile}
+        canClose={true}
+      />
 
       {/* Scroll to top */}
       <button

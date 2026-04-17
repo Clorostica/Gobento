@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Login from "./Login";
 import Logout from "./Logout";
 import FollowersFollowingPanel from "./FollowersFollowingPanel";
@@ -15,6 +14,7 @@ interface HeaderProps {
   userId?: string | undefined;
   showConnections?: boolean;
   initialDisplayName?: string | null;
+  onEditProfile?: () => void;
 }
 
 const Header = ({
@@ -23,9 +23,9 @@ const Header = ({
   userId,
   showConnections = true,
   initialDisplayName,
+  onEditProfile,
 }: HeaderProps) => {
   const { user, isAuthenticated } = useAuth0<AuthUser>();
-  const navigate = useNavigate();
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
     useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -64,47 +64,55 @@ const Header = ({
               </span>
             )}
 
-            {/* User avatar button — avatar only on mobile, avatar+name on lg+ */}
+            {/* User avatar button — toggles dropdown */}
             <div className="relative">
-              <Tooltip label={displayName ? `@${displayName}` : "My events"}>
-                <StarBorder
-                  onClick={() => navigate("/")}
-                  className={`${iconBtn} gap-2`}
-                  color="#FB923C"
-                  speed="6s"
-                  thickness={2}
-                >
-                  {user?.picture ? (
-                    <img
-                      src={user.picture}
-                      alt={displayName || "User"}
-                      className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                      {avatarLetter}
-                    </div>
-                  )}
-                  {/* Username only visible on large screens */}
-                  {displayName && (
-                    <span className="hidden lg:block truncate max-w-[100px] text-sm text-left">{displayName}</span>
-                  )}
-                </StarBorder>
-              </Tooltip>
-
-              {/* Sign-out chevron */}
-              <button
+              <StarBorder
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="absolute -right-1 -bottom-1 w-4 h-4 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white/50 hover:text-white/80 transition-colors z-10"
-                aria-label="Account menu"
+                className={`${iconBtn} gap-2`}
+                color="#FB923C"
+                speed="6s"
+                thickness={2}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                {user?.picture ? (
+                  <img
+                    src={user.picture}
+                    alt={displayName || "User"}
+                    className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="rounded-full w-6 h-6 ring-2 ring-orange-500/50 bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                    {avatarLetter}
+                  </div>
+                )}
+                {displayName && (
+                  <span className="hidden lg:block truncate max-w-[100px] text-sm text-left">{displayName}</span>
+                )}
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white/40 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </StarBorder>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-36 bg-black/90 backdrop-blur-md rounded-lg shadow-lg z-50 flex flex-col">
+                <div
+                  className="absolute right-0 mt-2 w-44 rounded-xl overflow-hidden z-50 flex flex-col"
+                  style={{
+                    background: "rgba(5,0,20,0.97)",
+                    border: "1px solid rgba(139,92,246,0.25)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+                    backdropFilter: "blur(16px)",
+                  }}
+                >
+                  {onEditProfile && (
+                    <button
+                      onClick={() => { setIsUserMenuOpen(false); onEditProfile(); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Edit Profile
+                    </button>
+                  )}
                   <Logout />
                 </div>
               )}

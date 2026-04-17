@@ -549,9 +549,16 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters */}
+              {/* Category filters — segmented control track */}
               <div className="w-full mb-10 px-4">
-                <div className="flex items-center justify-between gap-3 overflow-x-auto scrollbar-none pb-1">
+                <div
+                  className="flex items-stretch gap-1 p-1.5 rounded-2xl overflow-x-auto scrollbar-none"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    backdropFilter: "blur(12px)",
+                  }}
+                >
                   <EventFilter filter={filter} setFilter={setFilter} />
                 </div>
               </div>

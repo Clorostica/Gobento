@@ -50,13 +50,6 @@ body {
   transform: translateY(0);
 }
 
-/* Shine sweep on active filter pills */
-@keyframes shine {
-  0%   { transform: translateX(-100%); }
-  60%  { transform: translateX(100%); }
-  100% { transform: translateX(100%); }
-}
-
 /* Tooltip fade-in */
 @keyframes fade-in {
   from { opacity: 0; transform: translateX(-50%) translateY(4px); }

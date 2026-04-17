@@ -485,7 +485,7 @@ export default function HomePage() {
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
         <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8 flex-grow">
+        <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 pt-14 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -549,9 +549,9 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters — full bento width, pills spread evenly */}
-              <div className="w-full max-w-[1600px] mx-auto px-4 mb-10">
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+              {/* Category filters */}
+              <div className="w-full mb-10 px-4">
+                <div className="flex items-center justify-between gap-3 overflow-x-auto scrollbar-none pb-1">
                   <EventFilter filter={filter} setFilter={setFilter} />
                 </div>
               </div>

@@ -139,10 +139,9 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
         style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
         onClick={handleBackdropClick}
       >
-        <div className="relative w-full max-w-2xl">
           <div
             ref={containerRef}
-            className="event-detail-modal relative w-full max-h-[85vh] overflow-y-auto rounded-2xl border"
+            className="event-detail-modal relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border"
             style={{
               background: getStatusColor(statusToUse),
               backgroundColor: "#0a0015",
@@ -203,32 +202,30 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 {...(onGetVotes ? { onGetVotes } : {})}
               />
             </div>
-          </div>
 
-          {/* Scroll hint — fades out once user reaches the bottom */}
-          {canScrollMore && (
-            <div
-              className="absolute bottom-0 left-0 right-0 h-20 rounded-b-2xl pointer-events-none flex flex-col items-center justify-end pb-3 gap-1"
-              style={{
-                background: "linear-gradient(to top, rgba(10,0,21,0.95) 0%, transparent 100%)",
-              }}
-            >
-              <span className="text-white/40 text-[10px] font-medium tracking-wide uppercase">scroll</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4 text-white/40 animate-bounce"
+            {/* Scroll hint — sticky to the bottom of the scrollable modal */}
+            {canScrollMore && (
+              <div
+                className="sticky bottom-0 left-0 right-0 h-16 pointer-events-none flex flex-col items-center justify-end pb-3 gap-0.5"
+                style={{
+                  background: "linear-gradient(to top, rgba(10,0,21,0.97) 0%, transparent 100%)",
+                }}
               >
-                <path d="M12 5v14M5 12l7 7 7-7" />
-              </svg>
-            </div>
-          )}
-        </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-white/40 animate-bounce"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            )}
+          </div>
       </div>
 
       <ImageModal imageUrl={expandedImage} onClose={onCloseImage} />

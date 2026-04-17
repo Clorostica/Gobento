@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "./components/ui";
 import HomePage from "./pages/HomePage";
+import FeedPage from "./pages/FeedPage";
 import UserProfile from "./components/UserProfile";
 import SharedTaskPage from "./pages/SharedTaskPage";
 import Aurora from "./components/Aurora";
@@ -31,8 +32,8 @@ export default function App() {
         <div style={{ position: "relative", zIndex: 1 }}>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<HomePage initialView="feed" />} />
-              <Route path="/my-events" element={<HomePage initialView="personal" />} />
+              <Route path="/" element={<FeedPage />} />
+              <Route path="/my-events" element={<HomePage />} />
               <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/share/:token" element={<SharedTaskPage />} />
             </Routes>

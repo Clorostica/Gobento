@@ -23,6 +23,51 @@ const validateDate = (dateValue) => {
   return null;
 };
 
+// GET /events/feed - Social feed: public events from users the current user follows
+router.get("/feed", authenticate, async (req, res) => {
+  if (!req.auth) return res.status(401).json({ error: "Auth is required" });
+
+  try {
+    const { sub } = req.auth;
+
+    // Who does this user follow?
+    const followingResult = await pool.query(
+      "SELECT friend_user_id FROM friends WHERE user_id = $1",
+      [sub]
+    );
+
+    const following = followingResult.rows;
+
+    if (following.length === 0) {
+      return res.json({ events: [], following: [] });
+    }
+
+    const followingIds = following.map((r) => r.friend_user_id);
+
+    // Build IN placeholders ($2, $3, ...) — pool.query handles $N conversion
+    const placeholders = followingIds.map((_, i) => `$${i + 2}`).join(", ");
+
+    const eventsResult = await pool.query(
+      `SELECT t.id, t.user_id, t.status, t.text, t.title, t.color_class,
+              t.address, t.due_date, t.start_time, t.image_url, t.images,
+              t.liked, t.share_token, t.position,
+              u.username, u.avatar_url
+       FROM task_list t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.user_id IN (${placeholders})
+         AND t.status != 'private'
+       ORDER BY t.id DESC
+       LIMIT 100`,
+      [sub, ...followingIds]
+    );
+
+    res.json({ events: eventsResult.rows, following });
+  } catch (err) {
+    console.error("Feed error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 // GET - Obtener todos los eventos por user_id
 router.get("/", authenticate, async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "Auth is required" });

@@ -4,9 +4,10 @@ interface TooltipProps {
   label: string;
   children: React.ReactNode;
   position?: "bottom" | "top";
+  className?: string;
 }
 
-const Tooltip = ({ label, children, position = "bottom" }: TooltipProps) => {
+const Tooltip = ({ label, children, position = "bottom", className }: TooltipProps) => {
   const [visible, setVisible] = useState(false);
 
   const posClass =
@@ -16,7 +17,7 @@ const Tooltip = ({ label, children, position = "bottom" }: TooltipProps) => {
 
   return (
     <div
-      className="relative inline-flex"
+      className={`relative inline-flex${className ? ` ${className}` : ""}`}
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >

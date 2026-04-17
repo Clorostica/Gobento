@@ -549,7 +549,7 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters — segmented control track */}
+              {/* Category filters + Add Event — segmented control track */}
               <div className="w-full mb-10 px-4">
                 <div
                   className="flex items-stretch gap-1 p-1.5 rounded-2xl overflow-x-auto scrollbar-none"
@@ -560,6 +560,28 @@ export default function HomePage() {
                   }}
                 >
                   <EventFilter filter={filter} setFilter={setFilter} />
+
+                  {/* Divider */}
+                  <div className="w-px self-stretch mx-1 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
+
+                  {/* Add Event */}
+                  <button
+                    onClick={() => {
+                      const status =
+                        filter === "all" || filter === "liked" || filter === "friends"
+                          ? "planned"
+                          : filter;
+                      handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
+                    }}
+                    className="flex-shrink-0 flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
+                    style={{
+                      background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                      boxShadow: "0 2px 12px rgba(139,92,246,0.4)",
+                    }}
+                  >
+                    <span className="text-base leading-none">+</span>
+                    <span className="hidden sm:inline whitespace-nowrap">Add Event</span>
+                  </button>
                 </div>
               </div>
 

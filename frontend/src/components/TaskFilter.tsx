@@ -87,12 +87,12 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
       {filters.map((f) => {
         const isActive = filter === f.value;
         return (
-          <Tooltip key={f.value} label={f.tooltip} position="bottom">
+          <Tooltip key={f.value} label={f.tooltip} position="bottom" className="flex-1">
             <button
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setFilter(f.value)}
               className={`
-                relative flex-1 min-w-0 flex items-center justify-center gap-1.5
+                relative w-full flex items-center justify-center gap-1.5
                 py-2 px-2 sm:px-3 rounded-xl
                 text-xs sm:text-sm font-medium whitespace-nowrap
                 transition-all duration-200 ease-out

@@ -280,6 +280,18 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                 {getStatusIcon(task.status)}
               </span>
             )}
+            {/* Bookmark pin — visible only on shared events */}
+            {!!task.sharedFromUserId && !isReadOnly && (
+              <span
+                className="flex items-center justify-center flex-shrink-0"
+                title={task.sharedFromUsername ? `Saved from @${task.sharedFromUsername}` : "Saved from a friend"}
+                style={{ color: "rgba(168,85,247,0.9)" }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16 }}>
+                  <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                </svg>
+              </span>
+            )}
             {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
               <ShareLinkButton
                 task={task}

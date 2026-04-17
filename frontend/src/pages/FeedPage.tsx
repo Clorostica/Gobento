@@ -70,6 +70,13 @@ export default function FeedPage() {
   const [search, setSearch] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cachedUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Update --header-h CSS var for layout spacer
   useEffect(() => {
@@ -306,6 +313,27 @@ export default function FeedPage() {
           </div>
         )}
       </main>
+
+      {/* Scroll to top */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Scroll to top"
+        className="fixed bottom-6 right-5 z-[300] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ease-out"
+        style={{
+          background: "rgba(0,0,0,0.7)",
+          border: "1px solid rgba(139,92,246,0.4)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 4px 20px rgba(139,92,246,0.2)",
+          opacity: showScrollTop ? 1 : 0,
+          transform: showScrollTop ? "translateY(0)" : "translateY(16px)",
+          pointerEvents: showScrollTop ? "auto" : "none",
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      </button>
+
     </div>
   );
 }

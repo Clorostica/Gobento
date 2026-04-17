@@ -1,5 +1,6 @@
 import React from "react";
 import StarBorder from "./StarBorder";
+import Tooltip from "./Tooltip";
 
 interface SearchProps {
   search: string;
@@ -17,7 +18,6 @@ export default function Search({
   const handleSearchTypeChange = (type: "events" | "users") => {
     if (onSearchTypeChange) {
       onSearchTypeChange(type);
-      // Clear search when switching types
       setSearch("");
     }
   };
@@ -53,68 +53,75 @@ export default function Search({
           />
         </div>
         <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
-          <StarBorder
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSearchTypeChange("events");
-            }}
-            className={`flex items-center justify-center p-1.5 sm:p-2 md:p-2.5 transition-all duration-200 cursor-pointer ${
-              searchType === "events"
-                ? "scale-110"
-                : "opacity-70 hover:opacity-100"
-            }`}
-            color={searchType === "events" ? "#FB923C" : "#B19EEF"}
-            speed="6s"
-            thickness={0.5}
-            title="Search events"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
+
+          {/* My events */}
+          <Tooltip label="My Events — browse your dashboard" position="bottom">
+            <StarBorder
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSearchTypeChange("events");
+              }}
+              className={`flex items-center justify-center p-1.5 sm:p-2 md:p-2.5 transition-all duration-200 cursor-pointer star-border-container ${
+                searchType === "events"
+                  ? "scale-110"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+              color={searchType === "events" ? "#FB923C" : "#B19EEF"}
+              speed="6s"
+              thickness={0.5}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-          </StarBorder>
-          <StarBorder
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSearchTypeChange("users");
-            }}
-            className={`flex items-center justify-center p-1.5 sm:p-2 md:p-2.5 transition-all duration-200 cursor-pointer ${
-              searchType === "users"
-                ? "scale-110"
-                : "opacity-70 hover:opacity-100"
-            }`}
-            color={searchType === "users" ? "#FB923C" : "#B19EEF"}
-            speed="6s"
-            thickness={0.5}
-            title="Search users"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </StarBorder>
+          </Tooltip>
+
+          {/* Discover people */}
+          <Tooltip label="Discover People — find & follow friends" position="bottom">
+            <StarBorder
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSearchTypeChange("users");
+              }}
+              className={`flex items-center justify-center p-1.5 sm:p-2 md:p-2.5 transition-all duration-200 cursor-pointer star-border-container ${
+                searchType === "users"
+                  ? "scale-110"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+              color={searchType === "users" ? "#FB923C" : "#B19EEF"}
+              speed="6s"
+              thickness={0.5}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </StarBorder>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </StarBorder>
+          </Tooltip>
+
         </div>
       </div>
     </div>

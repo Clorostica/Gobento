@@ -19,6 +19,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   const filters: {
     value: FilterStatus;
     label: string;
+    shortLabel: string;
     icon: string;
     tooltip: string;
     gradient: string;
@@ -26,7 +27,8 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   }[] = [
     {
       value: "all",
-      label: "All",
+      label: "All Events",
+      shortLabel: "All",
       icon: "🎉",
       tooltip: "Show all your events",
       gradient: "linear-gradient(135deg, #7c3aed, #a855f7)",
@@ -35,6 +37,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "planned",
       label: "Ideas",
+      shortLabel: "Ideas",
       icon: "💡",
       tooltip: "Events you're planning",
       gradient: "linear-gradient(135deg, #7e22ce, #c026d3)",
@@ -43,6 +46,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "upcoming",
       label: "Upcoming",
+      shortLabel: "Soon",
       icon: "📅",
       tooltip: "Events happening soon",
       gradient: "linear-gradient(135deg, #1d4ed8, #06b6d4)",
@@ -51,6 +55,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "happened",
       label: "Memories",
+      shortLabel: "Memories",
       icon: "✨",
       tooltip: "Past events & memories",
       gradient: "linear-gradient(135deg, #047857, #10b981)",
@@ -59,6 +64,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "private",
       label: "Private",
+      shortLabel: "Private",
       icon: "🔒",
       tooltip: "Only visible to you",
       gradient: "linear-gradient(135deg, #374151, #6b7280)",
@@ -67,6 +73,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "liked",
       label: "Favorites",
+      shortLabel: "Liked",
       icon: "❤️",
       tooltip: "Events you've liked",
       gradient: "linear-gradient(135deg, #be123c, #f43f5e)",
@@ -75,6 +82,7 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "friends",
       label: "Friends",
+      shortLabel: "Friends",
       icon: "👥",
       tooltip: "Events from people you follow",
       gradient: "linear-gradient(135deg, #b45309, #f59e0b)",
@@ -93,8 +101,8 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
               onClick={() => setFilter(f.value)}
               className={`
                 relative w-full flex items-center justify-center gap-1.5
-                py-2 px-2 sm:px-3 rounded-xl
-                text-xs sm:text-sm font-medium whitespace-nowrap
+                py-2 px-1.5 rounded-xl
+                text-[11px] sm:text-sm font-semibold whitespace-nowrap
                 transition-all duration-200 ease-out
                 ${isActive
                   ? "text-white"
@@ -107,7 +115,9 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
               } : undefined}
             >
               <span className="text-sm sm:text-base leading-none flex-shrink-0">{f.icon}</span>
-              <span className="hidden sm:inline truncate">{f.label}</span>
+              {/* Short label on mobile, full label on desktop */}
+              <span className="sm:hidden">{f.shortLabel}</span>
+              <span className="hidden sm:inline">{f.label}</span>
             </button>
           </Tooltip>
         );

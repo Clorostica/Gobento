@@ -564,7 +564,7 @@ export default function HomePage() {
                   {/* Divider */}
                   <div className="w-px self-stretch mx-1 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
 
-                  {/* Add Event */}
+                  {/* Add Event — dashed border, sticky-note feel */}
                   <button
                     onClick={() => {
                       const status =
@@ -573,14 +573,13 @@ export default function HomePage() {
                           : filter;
                       handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
                     }}
-                    className="flex-shrink-0 flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
+                    className="flex-shrink-0 flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-[11px] sm:text-sm font-bold text-purple-300 hover:text-white transition-all duration-200 hover:bg-purple-500/20 active:scale-95"
                     style={{
-                      background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-                      boxShadow: "0 2px 12px rgba(139,92,246,0.4)",
+                      border: "2px dashed rgba(168,85,247,0.5)",
                     }}
                   >
-                    <span className="text-base leading-none">+</span>
-                    <span className="hidden sm:inline whitespace-nowrap">Add Event</span>
+                    <span className="text-base leading-none font-light">+</span>
+                    <span className="whitespace-nowrap">Add Event</span>
                   </button>
                 </div>
               </div>

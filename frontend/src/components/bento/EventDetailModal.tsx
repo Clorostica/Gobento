@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Event } from "@/types/tasks/task.types";
 import TaskCardContent from "./TaskCardContent";
 import ImageModal from "./ImageModal";
@@ -75,6 +75,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onGetVotes,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [canScrollMore, setCanScrollMore] = useState(false);
 
   useEffect(() => {
     if (!event) return;
@@ -88,7 +89,6 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
     return () => document.removeEventListener("keydown", handleKey);
   }, [event, onClose, onEditCancel]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (event) {
       document.body.style.overflow = "hidden";
@@ -96,6 +96,28 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
+  }, [event]);
+
+  // Track whether there's more content below to scroll to
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const check = () => {
+      setCanScrollMore(el.scrollTop + el.clientHeight < el.scrollHeight - 8);
+    };
+
+    check();
+    // Re-check after content renders (images may load late)
+    const t = setTimeout(check, 300);
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check, { passive: true });
+
+    return () => {
+      clearTimeout(t);
+      el.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
   }, [event]);
 
   if (!event) return null;
@@ -117,67 +139,95 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
         style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
         onClick={handleBackdropClick}
       >
-        <div
-          ref={containerRef}
-          className="event-detail-modal relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border"
-          style={{
-            background: getStatusColor(statusToUse),
-            backgroundColor: "#0a0015",
-            borderColor: getStatusBorderColor(statusToUse),
-            boxShadow: getStatusShadow(statusToUse),
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Modal header strip — close button lives here, clearly separated from card actions */}
+        <div className="relative w-full max-w-2xl">
           <div
-            className="sticky top-0 z-50 flex items-center justify-end px-4 pt-4 pb-2"
-            style={{ background: "linear-gradient(to bottom, #0a0015 80%, transparent)" }}
+            ref={containerRef}
+            className="event-detail-modal relative w-full max-h-[85vh] overflow-y-auto rounded-2xl border"
+            style={{
+              background: getStatusColor(statusToUse),
+              backgroundColor: "#0a0015",
+              borderColor: getStatusBorderColor(statusToUse),
+              boxShadow: getStatusShadow(statusToUse),
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(139,92,246,0.3) transparent",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => { onEditCancel(); onClose(); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all text-xs font-medium border border-white/10 hover:border-white/20"
-              aria-label="Close"
+            {/* Modal header strip — close button */}
+            <div
+              className="sticky top-0 z-50 flex items-center justify-end px-4 pt-4 pb-2"
+              style={{ background: "linear-gradient(to bottom, #0a0015 80%, transparent)" }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span>Close</span>
-            </button>
+              <button
+                onClick={() => { onEditCancel(); onClose(); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all text-xs font-medium border border-white/10 hover:border-white/20"
+                aria-label="Close"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Close</span>
+              </button>
+            </div>
+
+            <div className="px-5 pb-6 sm:px-7 sm:pb-8">
+              <TaskCardContent
+                task={event}
+                editingId={editingId}
+                editTitle={editTitle}
+                editText={editText}
+                editDueDate={editDueDate}
+                editStartTime={editStartTime}
+                editAddress={editAddress}
+                editImages={editImages}
+                onEditStart={onEditStart}
+                onEditSave={onEditSave}
+                onEditCancel={onEditCancel}
+                onTitleChange={onTitleChange}
+                onTextChange={onTextChange}
+                onDueDateChange={onDueDateChange}
+                onStartTimeChange={onStartTimeChange}
+                onAddressChange={onAddressChange}
+                onImagesChange={onImagesChange}
+                onEmojiSelect={onEmojiSelect}
+                onStatusClick={onStatusClick}
+                onStatusChange={onStatusChange}
+                onImageClick={onImageClick}
+                isReadOnly={isReadOnly ?? false}
+                {...(onDelete ? { onDelete } : {})}
+                {...(onLikeToggle ? { onLikeToggle } : {})}
+                {...(onCopyEvent ? { onCopyEvent } : {})}
+                {...(copiedEventIds ? { copiedEventIds } : {})}
+                {...(copyingEventId !== undefined ? { copyingEventId } : {})}
+                {...(onShareEvent ? { onShareEvent } : {})}
+                {...(onGetVotes ? { onGetVotes } : {})}
+              />
+            </div>
           </div>
 
-          <div className="px-5 pb-6 sm:px-7 sm:pb-8">
-            <TaskCardContent
-              task={event}
-              editingId={editingId}
-              editTitle={editTitle}
-              editText={editText}
-              editDueDate={editDueDate}
-              editStartTime={editStartTime}
-              editAddress={editAddress}
-              editImages={editImages}
-              onEditStart={onEditStart}
-              onEditSave={onEditSave}
-              onEditCancel={onEditCancel}
-              onTitleChange={onTitleChange}
-              onTextChange={onTextChange}
-              onDueDateChange={onDueDateChange}
-              onStartTimeChange={onStartTimeChange}
-              onAddressChange={onAddressChange}
-              onImagesChange={onImagesChange}
-              onEmojiSelect={onEmojiSelect}
-              onStatusClick={onStatusClick}
-              onStatusChange={onStatusChange}
-              onImageClick={onImageClick}
-              isReadOnly={isReadOnly ?? false}
-              {...(onDelete ? { onDelete } : {})}
-              {...(onLikeToggle ? { onLikeToggle } : {})}
-              {...(onCopyEvent ? { onCopyEvent } : {})}
-              {...(copiedEventIds ? { copiedEventIds } : {})}
-              {...(copyingEventId !== undefined ? { copyingEventId } : {})}
-              {...(onShareEvent ? { onShareEvent } : {})}
-              {...(onGetVotes ? { onGetVotes } : {})}
-            />
-          </div>
+          {/* Scroll hint — fades out once user reaches the bottom */}
+          {canScrollMore && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-20 rounded-b-2xl pointer-events-none flex flex-col items-center justify-end pb-3 gap-1"
+              style={{
+                background: "linear-gradient(to top, rgba(10,0,21,0.95) 0%, transparent 100%)",
+              }}
+            >
+              <span className="text-white/40 text-[10px] font-medium tracking-wide uppercase">scroll</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 text-white/40 animate-bounce"
+              >
+                <path d="M12 5v14M5 12l7 7 7-7" />
+              </svg>
+            </div>
+          )}
         </div>
       </div>
 

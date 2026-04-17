@@ -90,17 +90,18 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setFilter(f.value)}
             className={`
-              px-4 py-2.5 rounded-xl text-sm font-semibold border-2
-              whitespace-nowrap flex items-center flex-shrink-0
+              flex-1 min-w-0 py-2.5 rounded-xl text-sm font-semibold border-2
+              flex items-center justify-center gap-2 whitespace-nowrap
+              transition-all duration-200
               ${
                 filter === f.value
                   ? `bg-gradient-to-r ${f.gradient} text-white border-white/20`
-                  : "bg-black/20 text-white/80 hover:bg-black/30 hover:text-white border-transparent"
+                  : "bg-black/20 text-white/70 hover:bg-white/5 hover:text-white border-transparent"
               }
             `}
           >
-            <span className="mr-2 text-base flex-shrink-0">{f.icon}</span>
-            <span>{f.label}</span>
+            <span className="text-base flex-shrink-0">{f.icon}</span>
+            <span className="hidden sm:inline">{f.label}</span>
           </button>
         </Tooltip>
       ))}

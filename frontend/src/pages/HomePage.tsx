@@ -9,6 +9,7 @@ import TodoList from "../components/TodoList";
 import Search from "../components/Search";
 import EventFilter from "../components/TaskFilter";
 import FloatingActions from "../components/FloatingActions";
+import Tooltip from "../components/Tooltip";
 import {
   requestNotificationPermission,
   checkOverdueEvents,
@@ -468,9 +469,38 @@ export default function HomePage() {
               <Link to="/" className="no-underline">
                 <h1 className="text-white font-bold text-lg sm:text-xl flex-shrink-0 hover:opacity-80 transition-opacity">Gobento</h1>
               </Link>
+
+              {/* View switcher — My Events / Friends Feed */}
+              {isAuthenticated && (
+                <div className="hidden sm:flex items-center gap-1 ml-1 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <Tooltip label="My Events — your personal dashboard" position="bottom">
+                    <button
+                      onClick={() => { setFilter("all"); setSearchType("events"); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${filter !== "friends" && searchType === "events" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <span>My Events</span>
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Friends — events from people you follow" position="bottom">
+                    <button
+                      onClick={() => { setFilter("friends"); setSearchType("events"); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${filter === "friends" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Friends</span>
+                    </button>
+                  </Tooltip>
+                </div>
+              )}
+
               {/* Search — visible solo en sm+ */}
-              <div className="hidden sm:block ml-2 sm:ml-3">
-                <Search search={search} setSearch={setSearch} searchType={searchType} onSearchTypeChange={setSearchType} />
+              <div className="hidden sm:flex items-center gap-2 ml-1">
+                <Search search={search} setSearch={setSearch} searchType={searchType} />
               </div>
             </div>
             {/* User */}
@@ -478,9 +508,31 @@ export default function HomePage() {
               <Header token={token} API_URL={env.API_URL} initialDisplayName={cachedUsername || profile?.username || null} />
             </div>
           </div>
-          {/* Search mobile — segunda fila solo en mobile */}
-          <div className="sm:hidden px-4 pb-3">
-            <Search search={search} setSearch={setSearch} searchType={searchType} onSearchTypeChange={setSearchType} />
+          {/* Mobile: search + view switcher */}
+          <div className="sm:hidden px-4 pb-3 flex items-center gap-2">
+            <Search search={search} setSearch={setSearch} searchType={searchType} />
+            {isAuthenticated && (
+              <div className="flex items-center gap-1 flex-shrink-0 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <button
+                  onClick={() => { setFilter("all"); setSearchType("events"); }}
+                  className={`p-1.5 rounded-lg transition-all duration-200 ${filter !== "friends" ? "bg-white/15 text-white" : "text-white/40"}`}
+                  title="My Events"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => { setFilter("friends"); setSearchType("events"); }}
+                  className={`p-1.5 rounded-lg transition-all duration-200 ${filter === "friends" ? "bg-white/15 text-white" : "text-white/40"}`}
+                  title="Friends"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}

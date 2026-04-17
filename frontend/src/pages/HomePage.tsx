@@ -549,19 +549,12 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Category filters — centered, with subtle label and fade edges */}
-              <div className="mb-10">
-                <p className="text-center text-[11px] font-semibold tracking-[0.18em] uppercase text-white/25 mb-4 select-none">
-                  Browse Events
-                </p>
-                <div className="relative">
-                  {/* Fade edges on mobile scroll */}
-                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 z-10 bg-gradient-to-r from-black to-transparent sm:hidden" />
-                  <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 z-10 bg-gradient-to-l from-black to-transparent sm:hidden" />
-                  <div className="flex justify-center flex-wrap gap-2.5 overflow-x-auto pb-1 px-2 sm:px-0 sm:overflow-x-visible scrollbar-none">
-                    <EventFilter filter={filter} setFilter={setFilter} />
-                  </div>
+              {/* Category filters */}
+              <div className="w-full px-4 mb-10">
+                <div className="flex justify-center flex-wrap gap-2.5 overflow-x-auto scrollbar-none pb-1">
+                  <EventFilter filter={filter} setFilter={setFilter} />
                 </div>
+                <div className="mt-6 h-px bg-gradient-to-r from-transparent via-purple-900/40 to-transparent" />
               </div>
 
               <FloatingActions

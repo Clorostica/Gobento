@@ -1,10 +1,11 @@
 import type React from "react";
+import { useNavigate } from "react-router-dom";
 
 export interface Notification {
   id: number;
   actor_id: string | null;
   actor_name: string | null;
-  type: "follow" | "vote" | "comment";
+  type: "follow" | "vote" | "comment" | "share";
   event_id: string | null;
   event_title: string | null;
   read: number;
@@ -33,7 +34,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function notifMessage(n: Notification): string {
-  const actor = n.actor_name || "Someone";
+  const actor = n.actor_name ? `@${n.actor_name}` : "Someone";
   const title = n.event_title ? `"${n.event_title}"` : "your event";
   switch (n.type) {
     case "follow":
@@ -42,6 +43,8 @@ function notifMessage(n: Notification): string {
       return `${actor} voted on ${title}`;
     case "comment":
       return `${actor} commented on ${title}`;
+    case "share":
+      return `${actor} shared ${title} on their profile`;
     default:
       return "New notification";
   }
@@ -52,6 +55,7 @@ function notifIcon(type: string): string {
     case "follow": return "👤";
     case "vote": return "🗳️";
     case "comment": return "💬";
+    case "share": return "🔖";
     default: return "🔔";
   }
 }
@@ -63,12 +67,22 @@ const NotificationPanel = ({
   onClose,
   onMarkAllRead,
 }: NotificationPanelProps) => {
+  const navigate = useNavigate();
+
   if (!isOpen) return null;
 
+  const handleNotifClick = (n: Notification) => {
+    if (n.type === "share" && n.actor_id) {
+      onClose();
+      navigate(`/user/${n.actor_id}`);
+    } else if (n.type === "follow" && n.actor_id) {
+      onClose();
+      navigate(`/user/${n.actor_id}`);
+    }
+  };
+
   return (
-    <div
-      className="absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-purple-900/60 rounded-xl shadow-2xl shadow-purple-900/30 z-50 overflow-hidden"
-    >
+    <div className="absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-purple-900/60 rounded-xl shadow-2xl shadow-purple-900/30 z-50 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-purple-900/40">
         <span className="text-white font-semibold text-sm">Notifications</span>
@@ -89,25 +103,34 @@ const NotificationPanel = ({
             No notifications yet
           </div>
         ) : (
-          notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`flex items-start gap-3 px-4 py-3 border-b border-white/5 transition-colors ${
-                n.read ? "opacity-60" : "bg-purple-900/10"
-              }`}
-            >
-              <span className="text-lg flex-shrink-0 mt-0.5">{notifIcon(n.type)}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white leading-snug">
-                  {notifMessage(n)}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">{timeAgo(n.created_at)}</p>
+          notifications.map((n) => {
+            const isClickable = (n.type === "share" || n.type === "follow") && !!n.actor_id;
+            return (
+              <div
+                key={n.id}
+                onClick={() => handleNotifClick(n)}
+                className={`flex items-start gap-3 px-4 py-3 border-b border-white/5 transition-colors ${
+                  n.read ? "opacity-60" : "bg-purple-900/10"
+                } ${isClickable ? "cursor-pointer hover:bg-purple-900/20" : ""}`}
+              >
+                <span className="text-lg flex-shrink-0 mt-0.5">{notifIcon(n.type)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white leading-snug">
+                    {notifMessage(n)}
+                  </p>
+                  {isClickable && (
+                    <p className="text-xs text-purple-400 mt-0.5">
+                      {n.type === "share" ? "View their profile →" : "View profile →"}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-0.5">{timeAgo(n.created_at)}</p>
+                </div>
+                {!n.read && (
+                  <div className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0 mt-1.5" />
+                )}
               </div>
-              {!n.read && (
-                <div className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0 mt-1.5" />
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

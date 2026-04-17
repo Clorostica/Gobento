@@ -124,7 +124,7 @@ router.put("/", authenticate, async (req, res) => {
     const avatarUrlValue = avatar_url || avatarUrl || null;
 
     const result = await pool.query(
-      "UPDATE users SET username = $1, avatar_url = $2 WHERE id = $3 RETURNING *",
+      "UPDATE users SET username = $1, avatar_url = COALESCE($2, avatar_url) WHERE id = $3 RETURNING *",
       [trimmedUsername, avatarUrlValue, sub]
     );
 

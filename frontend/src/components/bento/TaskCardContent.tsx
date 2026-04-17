@@ -191,6 +191,25 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
         />
       )}
 
+      {/* Shared-from badge — shown when this event was copied from another user */}
+      {!!task.sharedFromUserId && !isReadOnly && (
+        <div
+          className="absolute -top-2 -left-2 z-30 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold pointer-events-none select-none"
+          style={{
+            background: "linear-gradient(135deg, rgba(124,58,237,0.85), rgba(168,85,247,0.85))",
+            border: "1px solid rgba(168,85,247,0.5)",
+            color: "rgba(255,255,255,0.95)",
+            boxShadow: "0 2px 8px rgba(124,58,237,0.4)",
+          }}
+          title="Shared from a friend"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+          </svg>
+          <span>Shared</span>
+        </div>
+      )}
+
       {/* Combined header: title (left) + actions (right) */}
       {!isEditing && (
         <div className="flex items-start gap-2 mb-3 relative z-20">

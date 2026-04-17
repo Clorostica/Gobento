@@ -351,6 +351,8 @@ export default function FeedPage() {
         onSubmit={handleUsernameSubmit}
         isLoading={isUpdatingProfile}
         canClose={true}
+        currentUsername={profile?.username || ""}
+        currentAvatarUrl={profile?.avatarUrl || null}
       />
 
       {/* Scroll to top */}

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { FormEvent } from "react";
 import { X, CheckCircle, AlertCircle, Upload, User } from "lucide-react";
 import { uploadFile } from "../../utils/uploadthing";
@@ -11,6 +11,8 @@ interface UsernameModalProps {
   canClose?: boolean;
   onCancel?: () => void;
   isNewlyCreatedUser?: boolean;
+  currentUsername?: string;
+  currentAvatarUrl?: string | null;
 }
 
 export default function UsernameModal({
@@ -21,14 +23,26 @@ export default function UsernameModal({
   canClose = true,
   onCancel,
   isNewlyCreatedUser = false,
+  currentUsername = "",
+  currentAvatarUrl = null,
 }: UsernameModalProps) {
-  const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [username, setUsername] = useState(currentUsername);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatarUrl);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Re-sync state whenever the modal opens so pre-filled values are current
+  useEffect(() => {
+    if (isOpen) {
+      setUsername(currentUsername);
+      setAvatarUrl(currentAvatarUrl);
+      setAvatarPreview(currentAvatarUrl);
+      setError(null);
+    }
+  }, [isOpen, currentUsername, currentAvatarUrl]);
 
   if (!isOpen) return null;
 
@@ -48,9 +62,6 @@ export default function UsernameModal({
     setIsSubmitting(true);
     try {
       await onSubmit(username.trim(), avatarUrl);
-      setUsername("");
-      setAvatarUrl(null);
-      setAvatarPreview(null);
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);

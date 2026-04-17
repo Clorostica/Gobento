@@ -678,6 +678,8 @@ export default function HomePage() {
         canClose={!isNewlyCreatedUser}
         onCancel={handleCancelUserCreation}
         isNewlyCreatedUser={isNewlyCreatedUser}
+        currentUsername={isNewlyCreatedUser ? "" : (profile?.username || "")}
+        currentAvatarUrl={isNewlyCreatedUser ? null : (profile?.avatarUrl || null)}
       />
     </div>
   );

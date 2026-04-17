@@ -312,6 +312,43 @@ router.post("/", authenticate, async (req, res) => {
       position: createdEvent.position,
       allFields: Object.keys(createdEvent),
     });
+
+    // Notify the original event creator when someone shares their event
+    if (sharedFromUserIdValue && originalEventIdValue) {
+      try {
+        const origEvent = await pool.query(
+          "SELECT user_id, title FROM task_list WHERE id = $1",
+          [originalEventIdValue]
+        );
+        const origRow = origEvent.rows[0];
+        if (origRow && origRow.user_id !== userId) {
+          const sharer = await pool.query(
+            "SELECT username, name FROM users WHERE id = $1",
+            [userId]
+          );
+          const sharerName =
+            sharer.rows[0]?.username ||
+            sharer.rows[0]?.name ||
+            "Someone";
+          await pool.query(
+            `INSERT INTO notifications (user_id, actor_id, actor_name, type, event_id, event_title)
+             VALUES ($1, $2, $3, 'share', $4, $5)`,
+            [
+              origRow.user_id,
+              userId,
+              sharerName,
+              originalEventIdValue,
+              origRow.title || "your event",
+            ]
+          );
+          console.log("🔔 Notification sent to original creator:", origRow.user_id);
+        }
+      } catch (notifErr) {
+        // Non-fatal — log but don't fail the request
+        console.error("⚠️ Failed to send share notification:", notifErr);
+      }
+    }
+
     res.status(201).json(createdEvent);
   } catch (err) {
     console.error("❌ Error creating event:", err);

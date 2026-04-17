@@ -29,13 +29,11 @@ export default function FollowingList({
   });
 
   if (isLoading) {
-    return <p className="text-center py-10">Loading following...</p>;
+    return <p className="text-center py-10 text-white/40 text-sm">Loading...</p>;
   }
 
   if (filtered.length === 0) {
-    return (
-      <p className="text-center py-10">You are not following anyone yet</p>
-    );
+    return <p className="text-center py-10 text-white/40 text-sm">Not following anyone yet</p>;
   }
 
   return (

@@ -94,136 +94,108 @@ export default function FollowersFollowingPanel({
 
   return (
     <div
-      className="fixed inset-0 flex items-start justify-center bg-black/40 z-50 pt-10"
+      className="fixed inset-0 flex items-start justify-center z-50 pt-16 sm:pt-20 px-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 h-[70vh] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
-        {/* Header + Tabs + Search */}
-        <div className="flex-shrink-0 p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+      <div
+        className="w-full max-w-md h-[72vh] flex flex-col rounded-2xl overflow-hidden border border-purple-900/50 shadow-2xl shadow-purple-900/30"
+        style={{ background: "rgba(5,0,20,0.97)", backdropFilter: "blur(20px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 px-5 pt-5 pb-4 border-b border-purple-900/40">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Connections</h2>
+            <h2 className="text-white font-semibold text-base">Connections</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+              className="w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Close"
             >
-              <X size={24} />
+              <X size={16} />
             </button>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg mb-3">
-            <button
-              onClick={() => setActiveTab("followers")}
-              className={`flex-1 py-2.5 px-4 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-                activeTab === "followers"
-                  ? "bg-white text-purple-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              <Users size={16} />
-              <span>Followers</span>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  activeTab === "followers"
-                    ? "bg-purple-100 text-purple-600"
-                    : "bg-gray-200 text-gray-600"
+          <div className="flex gap-1.5 p-1 rounded-lg mb-3" style={{ background: "rgba(255,255,255,0.05)" }}>
+            {(["followers", "following"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === tab
+                    ? "text-white"
+                    : "text-white/40 hover:text-white/70"
                 }`}
+                style={activeTab === tab ? {
+                  background: "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(168,85,247,0.2))",
+                  boxShadow: "0 1px 8px rgba(139,92,246,0.2)",
+                } : undefined}
               >
-                {followers.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("following")}
-              className={`flex-1 py-2.5 px-4 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-                activeTab === "following"
-                  ? "bg-white text-purple-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              <UserPlus size={16} />
-              <span>Following</span>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  activeTab === "following"
-                    ? "bg-purple-100 text-purple-600"
-                    : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {following.length}
-              </span>
-            </button>
+                {tab === "followers" ? <Users size={14} /> : <UserPlus size={14} />}
+                <span className="capitalize">{tab}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab
+                    ? "bg-purple-500/30 text-purple-300"
+                    : "bg-white/10 text-white/40"
+                }`}>
+                  {tab === "followers" ? followers.length : following.length}
+                </span>
+              </button>
+            ))}
           </div>
 
-          {/* Search Bar */}
+          {/* Search */}
           <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={18}
-            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={15} />
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              className="w-full pl-9 pr-8 py-2 rounded-lg text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/60 transition-all"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(139,92,246,0.2)" }}
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             )}
           </div>
         </div>
 
-        {/* User List */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto px-5 pb-5">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-3"></div>
-              <p className="text-sm text-gray-500">Loading...</p>
+            <div className="flex flex-col items-center justify-center py-14">
+              <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-400 rounded-full animate-spin mb-3" />
+              <p className="text-sm text-white/40">Loading...</p>
             </div>
           ) : filteredList.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="text-center py-14">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(139,92,246,0.1)" }}>
                 {searchTerm ? (
-                  <Search className="text-gray-400" size={24} />
+                  <Search className="text-purple-400/60" size={22} />
                 ) : activeTab === "followers" ? (
-                  <Users className="text-gray-400" size={24} />
+                  <Users className="text-purple-400/60" size={22} />
                 ) : (
-                  <UserPlus className="text-gray-400" size={24} />
+                  <UserPlus className="text-purple-400/60" size={22} />
                 )}
               </div>
-              <p className="text-sm font-medium text-gray-700 mb-1">
-                {searchTerm
-                  ? "No results found"
-                  : activeTab === "followers"
-                  ? "No followers yet"
-                  : "Not following anyone yet"}
+              <p className="text-sm font-medium text-white/60 mb-1">
+                {searchTerm ? "No results" : activeTab === "followers" ? "No followers yet" : "Not following anyone"}
               </p>
-              <p className="text-xs text-gray-500">
-                {searchTerm
-                  ? "Try a different search term"
-                  : activeTab === "followers"
-                  ? "Share your content to gain followers"
-                  : "Start following users to see them here"}
+              <p className="text-xs text-white/30">
+                {searchTerm ? "Try a different term" : activeTab === "followers" ? "Share your events to gain followers" : "Follow people to see them here"}
               </p>
             </div>
           ) : activeTab === "followers" ? (
-            <FollowersList
-              users={followers}
-              isLoading={isLoading}
-              searchTerm={searchTerm}
-            />
+            <FollowersList users={followers} isLoading={isLoading} searchTerm={searchTerm} />
           ) : (
-            <FollowingList
-              users={following}
-              isLoading={isLoading}
-              searchTerm={searchTerm}
-            />
+            <FollowingList users={following} isLoading={isLoading} searchTerm={searchTerm} />
           )}
         </div>
       </div>

@@ -286,14 +286,26 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                 </span>
               </Tooltip>
             )}
-            {/* Bookmark pin — visible only on shared events */}
+            {/* Bookmark — on shared events acts as remove button */}
             {!!task.sharedFromUserId && !isReadOnly && (
-              <Tooltip label={task.sharedFromUsername ? `Saved from @${task.sharedFromUsername}` : "Saved from a friend"} position="top">
-                <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-purple-400">
+              <Tooltip label="Remove from my profile" position="top">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete?.(task.id);
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-purple-400 hover:text-red-400 transition-colors z-10 relative"
+                >
                   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-full h-full">
                     <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
                   </svg>
-                </span>
+                </button>
               </Tooltip>
             )}
             {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
@@ -303,7 +315,7 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                 onGetVotes={onGetVotes}
               />
             )}
-            {onDelete && !isReadOnly && (
+            {onDelete && !isReadOnly && !task.sharedFromUserId && (
               <Tooltip label="Delete event" position="top">
                 <button
                   onClick={(e) => {

@@ -50,7 +50,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
     task.title || (task.text && !task.title ? task.text : "") || "";
   if (!displayText || displayText.trim() === "") {
     return (
-      <div className="mb-3">
+      <div>
         <div
           className={`text-lg font-semibold ${
             !isReadOnly && !task.sharedFromUserId ? "cursor-pointer" : ""
@@ -73,7 +73,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
   }
 
   return (
-    <div className="mb-3">
+    <div>
       <h2
         className={`magic-bento-card__title ${
           !isReadOnly && !task.sharedFromUserId

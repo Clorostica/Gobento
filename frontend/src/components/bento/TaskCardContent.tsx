@@ -191,140 +191,122 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
         />
       )}
 
-      {/* Top bar with like, status, and delete buttons */}
+      {/* Combined header: title (left) + actions (right) */}
       {!isEditing && (
-        <div className="flex justify-end items-center gap-2 mb-4 relative z-20">
-          {onLikeToggle && (
-            <HeartButton
-              isLiked={task.liked || false}
-              onToggle={() => {
-                onLikeToggle?.(task);
-              }}
-              size="md"
+        <div className="flex items-start gap-2 mb-3 relative z-20">
+          {/* Title — grows to fill available space */}
+          <div className="flex-1 min-w-0">
+            <TaskHeader
+              task={task}
+              isEditing={isEditing}
+              onEditStart={() => onEditStart(task)}
+              onStatusClick={() => onStatusClick(task)}
+              {...(onHeaderKeyDown
+                ? { onKeyDown: (e: React.KeyboardEvent) => onHeaderKeyDown(e, task) }
+                : {})}
+              isReadOnly={isReadOnly}
+              onCopyEvent={onCopyEvent ? () => onCopyEvent(task) : undefined}
+              isCopied={copiedEventIds?.has(task.id) || false}
+              isCopying={copyingEventId === task.id}
+              hideActions={true}
             />
-          )}
-          {!isReadOnly && !task.sharedFromUserId && (
-            <div className="relative" ref={statusMenuRef}>
-              <span
-                className="text-lg opacity-60 hover:opacity-100 transition-opacity"
-                title={`${getStatusLabel(
-                  task.status
-                )} - Click to cycle, click again to see menu`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // If menu is open, close it and cycle
-                  if (showStatusMenu) {
-                    setShowStatusMenu(false);
-                    onStatusClick(task);
-                  } else {
-                    // If menu is closed, show it
-                    setShowStatusMenu(true);
-                  }
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                style={{ cursor: "pointer" }}
-              >
+          </div>
+
+          {/* Action buttons — flex-shrink-0 on the right */}
+          <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
+            {onLikeToggle && (
+              <HeartButton
+                isLiked={task.liked || false}
+                onToggle={() => onLikeToggle?.(task)}
+                size="md"
+              />
+            )}
+            {!isReadOnly && !task.sharedFromUserId && (
+              <div className="relative" ref={statusMenuRef}>
+                <span
+                  className="text-lg opacity-60 hover:opacity-100 transition-opacity"
+                  title={`${getStatusLabel(task.status)} - Click to cycle, click again to see menu`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (showStatusMenu) {
+                      setShowStatusMenu(false);
+                      onStatusClick(task);
+                    } else {
+                      setShowStatusMenu(true);
+                    }
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  style={{ cursor: "pointer" }}
+                >
+                  {getStatusIcon(task.status)}
+                </span>
+
+                {showStatusMenu && (
+                  <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-md border border-purple-400/30 rounded-lg shadow-xl z-[100] py-1 min-w-[140px]">
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider border-b border-purple-400/10 mb-1">
+                      Change status
+                    </div>
+                    {statuses.map((status) => (
+                      <button
+                        key={status}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onStatusChange) {
+                            onStatusChange(task.id, status);
+                          } else {
+                            onStatusClick(task);
+                          }
+                          setShowStatusMenu(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-purple-400/10 last:border-b-0 ${
+                          task.status === status
+                            ? "text-purple-400 font-semibold bg-white/5"
+                            : "text-white/70"
+                        }`}
+                      >
+                        <span className="text-lg">{getStatusIcon(status)}</span>
+                        <span className="text-xs">{getStatusLabelText(status)}</span>
+                        {task.status === status && (
+                          <span className="ml-auto text-[10px]">●</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {(isReadOnly || !!task.sharedFromUserId) && (
+              <span className="text-lg opacity-60" title={getStatusLabel(task.status)}>
                 {getStatusIcon(task.status)}
               </span>
-
-              {showStatusMenu && (
-                <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-md border border-purple-400/30 rounded-lg shadow-xl z-[100] py-1 min-w-[140px] animate-in fade-in zoom-in duration-200">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider border-b border-purple-400/10 mb-1">
-                    Change status
-                  </div>
-                  {statuses.map((status) => (
-                    <button
-                      key={status}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onStatusChange) {
-                          onStatusChange(task.id, status);
-                        } else {
-                          // Fallback to cycling if onStatusChange not provided
-                          onStatusClick(task);
-                        }
-                        setShowStatusMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-purple-400/10 last:border-b-0 ${
-                        task.status === status
-                          ? "text-purple-400 font-semibold bg-white/5"
-                          : "text-white/70"
-                      }`}
-                    >
-                      <span className="text-lg">{getStatusIcon(status)}</span>
-                      <span className="text-xs">
-                        {getStatusLabelText(status)}
-                      </span>
-                      {task.status === status && (
-                        <span className="ml-auto text-[10px]">●</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {!isReadOnly && task.sharedFromUserId && (
-            <span
-              className="text-lg opacity-60"
-              title={getStatusLabel(task.status)}
-            >
-              {getStatusIcon(task.status)}
-            </span>
-          )}
-          {isReadOnly && (
-            <span
-              className="text-lg opacity-60"
-              title={getStatusLabel(task.status)}
-            >
-              {getStatusIcon(task.status)}
-            </span>
-          )}
-          {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
-            <ShareLinkButton
-              task={task}
-              onShare={onShareEvent}
-              onGetVotes={onGetVotes}
-            />
-          )}
-          {onDelete && !isReadOnly && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(task.id);
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="text-white hover:text-red-300 text-xs px-2 py-1 rounded transition-colors z-10 relative"
-              title="Delete"
-              type="button"
-            >
-              ✕
-            </button>
-          )}
+            )}
+            {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
+              <ShareLinkButton
+                task={task}
+                onShare={onShareEvent}
+                onGetVotes={onGetVotes}
+              />
+            )}
+            {onDelete && !isReadOnly && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(task.id);
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="text-white/40 hover:text-red-300 text-xs px-1.5 py-1 rounded transition-colors z-10 relative"
+                title="Delete"
+                type="button"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
-      )}
-
-      {!isEditing && (
-        <TaskHeader
-          task={task}
-          isEditing={isEditing}
-          onEditStart={() => onEditStart(task)}
-          onStatusClick={() => onStatusClick(task)}
-          {...(onHeaderKeyDown
-            ? {
-                onKeyDown: (e: React.KeyboardEvent) => onHeaderKeyDown(e, task),
-              }
-            : {})}
-          isReadOnly={isReadOnly}
-          onCopyEvent={onCopyEvent ? () => onCopyEvent(task) : undefined}
-          isCopied={copiedEventIds?.has(task.id) || false}
-          isCopying={copyingEventId === task.id}
-          hideActions={true}
-        />
       )}
 
       <div className="magic-bento-card__content">

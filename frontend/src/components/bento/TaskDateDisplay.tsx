@@ -25,7 +25,10 @@ const TaskDateDisplay: React.FC<TaskDateDisplayProps> = ({ task }) => {
       today.setHours(0, 0, 0, 0);
       dueDate.setHours(0, 0, 0, 0);
 
-      isOverdue = dueDate < today && task.status !== "happened";
+      isOverdue =
+        dueDate < today &&
+        task.status !== "happened" &&
+        task.status !== "private";
     } else {
       return null;
     }

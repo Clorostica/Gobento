@@ -8,6 +8,7 @@ import HeartButton from "./HeartButton";
 import FloatingCopyButton from "./FloatingCopyButton";
 import ShareLinkButton from "./ShareLinkButton";
 import TextWithMentions from "./TextWithMentions";
+import Tooltip from "../Tooltip";
 import { getStatusIcon, getStatusLabel, getStatusLabelText } from "./utils";
 import { env } from "@/config/env";
 
@@ -215,31 +216,34 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
           {/* Action buttons — flex-shrink-0 on the right */}
           <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
             {onLikeToggle && (
-              <HeartButton
-                isLiked={task.liked || false}
-                onToggle={() => onLikeToggle?.(task)}
-                size="md"
-              />
+              <Tooltip label={task.liked ? "Unlike" : "Like"} position="top">
+                <HeartButton
+                  isLiked={task.liked || false}
+                  onToggle={() => onLikeToggle?.(task)}
+                  size="md"
+                />
+              </Tooltip>
             )}
             {!isReadOnly && !task.sharedFromUserId && (
               <div className="relative" ref={statusMenuRef}>
-                <span
-                  className="text-lg opacity-60 hover:opacity-100 transition-opacity"
-                  title={`${getStatusLabel(task.status)} - Click to cycle, click again to see menu`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (showStatusMenu) {
-                      setShowStatusMenu(false);
-                      onStatusClick(task);
-                    } else {
-                      setShowStatusMenu(true);
-                    }
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  style={{ cursor: "pointer" }}
-                >
-                  {getStatusIcon(task.status)}
-                </span>
+                <Tooltip label={getStatusLabel(task.status)} position="top">
+                  <span
+                    className="text-lg opacity-60 hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (showStatusMenu) {
+                        setShowStatusMenu(false);
+                        onStatusClick(task);
+                      } else {
+                        setShowStatusMenu(true);
+                      }
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {getStatusIcon(task.status)}
+                  </span>
+                </Tooltip>
 
                 {showStatusMenu && (
                   <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-md border border-purple-400/30 rounded-lg shadow-xl z-[100] py-1 min-w-[140px]">
@@ -276,20 +280,21 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
               </div>
             )}
             {(isReadOnly || !!task.sharedFromUserId) && (
-              <span className="text-lg opacity-60" title={getStatusLabel(task.status)}>
-                {getStatusIcon(task.status)}
-              </span>
+              <Tooltip label={getStatusLabel(task.status)} position="top">
+                <span className="text-lg opacity-60">
+                  {getStatusIcon(task.status)}
+                </span>
+              </Tooltip>
             )}
             {/* Bookmark pin — visible only on shared events */}
             {!!task.sharedFromUserId && !isReadOnly && (
-              <span
-                className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-purple-400"
-                title={task.sharedFromUsername ? `Saved from @${task.sharedFromUsername}` : "Saved from a friend"}
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-full h-full">
-                  <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
-                </svg>
-              </span>
+              <Tooltip label={task.sharedFromUsername ? `Saved from @${task.sharedFromUsername}` : "Saved from a friend"} position="top">
+                <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-purple-400">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-full h-full">
+                    <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                  </svg>
+                </span>
+              </Tooltip>
             )}
             {onShareEvent && onGetVotes && !isReadOnly && !task.sharedFromUserId && (
               <ShareLinkButton
@@ -299,22 +304,23 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
               />
             )}
             {onDelete && !isReadOnly && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDelete(task.id);
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="text-white/40 hover:text-red-300 text-xs px-1.5 py-1 rounded transition-colors z-10 relative"
-                title="Delete"
-                type="button"
-              >
-                ✕
-              </button>
+              <Tooltip label="Delete event" position="top">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className="text-white/40 hover:text-red-300 text-xs px-1.5 py-1 rounded transition-colors z-10 relative"
+                  type="button"
+                >
+                  ✕
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

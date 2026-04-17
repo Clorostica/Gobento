@@ -92,3 +92,11 @@ body {
 .emoji-picker-scroll::-webkit-scrollbar-thumb:hover {
   background: #9333ea;
 }
+
+/* Hide scrollbar on horizontal filter row */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

@@ -485,7 +485,7 @@ export default function HomePage() {
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
         <div aria-hidden="true" style={{ height: "var(--header-h)", flexShrink: 0 }} />
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 flex-grow">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8 flex-grow">
           {searchType === "users" ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -549,8 +549,19 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-3 mb-8">
-                <EventFilter filter={filter} setFilter={setFilter} />
+              {/* Category filters — centered, with subtle label and fade edges */}
+              <div className="mb-10">
+                <p className="text-center text-[11px] font-semibold tracking-[0.18em] uppercase text-white/25 mb-4 select-none">
+                  Browse Events
+                </p>
+                <div className="relative">
+                  {/* Fade edges on mobile scroll */}
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 z-10 bg-gradient-to-r from-black to-transparent sm:hidden" />
+                  <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 z-10 bg-gradient-to-l from-black to-transparent sm:hidden" />
+                  <div className="flex justify-center flex-wrap gap-2.5 overflow-x-auto pb-1 px-2 sm:px-0 sm:overflow-x-visible scrollbar-none">
+                    <EventFilter filter={filter} setFilter={setFilter} />
+                  </div>
+                </div>
               </div>
 
               <FloatingActions

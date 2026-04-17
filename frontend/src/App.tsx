@@ -32,8 +32,8 @@ export default function App() {
         <div style={{ position: "relative", zIndex: 1 }}>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<FeedPage />} />
-              <Route path="/my-events" element={<HomePage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/feed" element={<FeedPage />} />
               <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/share/:token" element={<SharedTaskPage />} />
             </Routes>

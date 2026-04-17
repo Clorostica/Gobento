@@ -467,7 +467,7 @@ export default function HomePage() {
           <div className="flex items-center w-full px-3 sm:px-5 lg:px-8 xl:px-12 py-2.5 sm:py-3">
 
             {/* Brand — more prominent, breathing room via margin */}
-            <Link to="/" className="no-underline flex items-center gap-1.5 sm:gap-2 flex-shrink-0 group mr-4 sm:mr-5">
+            <Link to="/feed" className="no-underline flex items-center gap-1.5 sm:gap-2 flex-shrink-0 group mr-4 sm:mr-5">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 group-hover:text-purple-300 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
@@ -481,12 +481,12 @@ export default function HomePage() {
             {isAuthenticated && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Tooltip label="My Events" position="bottom">
-                  <StarBorder onClick={() => navigate("/my-events")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
+                  <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   </StarBorder>
                 </Tooltip>
                 <Tooltip label="Friends' Feed" position="bottom">
-                  <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
+                  <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2 sm:px-2.5 py-2 min-h-[34px] sm:min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   </StarBorder>
                 </Tooltip>

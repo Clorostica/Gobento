@@ -68,7 +68,7 @@ const Header = ({
             <div className="relative">
               <Tooltip label={displayName ? `@${displayName}` : "My events"}>
                 <StarBorder
-                  onClick={() => navigate("/my-events")}
+                  onClick={() => navigate("/")}
                   className={`${iconBtn} gap-2`}
                   color="#FB923C"
                   speed="6s"

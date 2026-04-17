@@ -19,7 +19,6 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
   const filters: {
     value: FilterStatus;
     label: string;
-    shortLabel: string;
     icon: string;
     tooltip: string;
     gradient: string;
@@ -28,63 +27,56 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
     {
       value: "all",
       label: "All Events",
-      shortLabel: "All",
       icon: "🎉",
-      tooltip: "Show all your events",
+      tooltip: "All Events",
       gradient: "linear-gradient(135deg, #7c3aed, #a855f7)",
       glow: "rgba(139,92,246,0.4)",
     },
     {
       value: "planned",
       label: "Ideas",
-      shortLabel: "Ideas",
       icon: "💡",
-      tooltip: "Events you're planning",
+      tooltip: "Ideas — events you're planning",
       gradient: "linear-gradient(135deg, #7e22ce, #c026d3)",
       glow: "rgba(192,38,211,0.4)",
     },
     {
       value: "upcoming",
       label: "Upcoming",
-      shortLabel: "Soon",
       icon: "📅",
-      tooltip: "Events happening soon",
+      tooltip: "Upcoming — happening soon",
       gradient: "linear-gradient(135deg, #1d4ed8, #06b6d4)",
       glow: "rgba(59,130,246,0.4)",
     },
     {
       value: "happened",
       label: "Memories",
-      shortLabel: "Memories",
       icon: "✨",
-      tooltip: "Past events & memories",
+      tooltip: "Memories — past events",
       gradient: "linear-gradient(135deg, #047857, #10b981)",
       glow: "rgba(16,185,129,0.4)",
     },
     {
       value: "private",
       label: "Private",
-      shortLabel: "Private",
       icon: "🔒",
-      tooltip: "Only visible to you",
+      tooltip: "Private — only visible to you",
       gradient: "linear-gradient(135deg, #374151, #6b7280)",
       glow: "rgba(107,114,128,0.4)",
     },
     {
       value: "liked",
       label: "Favorites",
-      shortLabel: "Liked",
       icon: "❤️",
-      tooltip: "Events you've liked",
+      tooltip: "Favorites — events you liked",
       gradient: "linear-gradient(135deg, #be123c, #f43f5e)",
       glow: "rgba(244,63,94,0.4)",
     },
     {
       value: "friends",
       label: "Friends",
-      shortLabel: "Friends",
       icon: "👥",
-      tooltip: "Events from people you follow",
+      tooltip: "Friends — events from people you follow",
       gradient: "linear-gradient(135deg, #b45309, #f59e0b)",
       glow: "rgba(245,158,11,0.4)",
     },
@@ -114,9 +106,8 @@ export default function EventFilter({ filter, setFilter }: EventFilterProps) {
                 boxShadow: `0 2px 12px ${f.glow}`,
               } : undefined}
             >
-              <span className="text-sm sm:text-base leading-none flex-shrink-0">{f.icon}</span>
-              {/* Short label on mobile, full label on desktop */}
-              <span className="sm:hidden">{f.shortLabel}</span>
+              <span className="text-base leading-none flex-shrink-0">{f.icon}</span>
+              {/* Label hidden on mobile — tooltip covers it */}
               <span className="hidden sm:inline">{f.label}</span>
             </button>
           </Tooltip>

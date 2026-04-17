@@ -121,6 +121,8 @@ const normalizeEventForStorage = (event: Event): Event => {
     images: Array.isArray(event.images) ? event.images : [],
     liked: Boolean(event.liked),
     sharedFromUserId: event.sharedFromUserId || null,
+    sharedFromUsername: event.sharedFromUsername || null,
+    sharedFromUserAvatar: event.sharedFromUserAvatar || null,
     position: event.position !== undefined ? event.position : null,
   };
 };

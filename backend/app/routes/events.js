@@ -76,15 +76,22 @@ router.get("/", authenticate, async (req, res) => {
     const { sub } = req.auth;
     const { status } = req.query;
 
-    let query = "SELECT * FROM task_list WHERE user_id = $1";
+    let query = `
+      SELECT t.*,
+             su.username AS shared_from_username,
+             su.avatar_url AS shared_from_user_avatar
+      FROM task_list t
+      LEFT JOIN users su ON t.shared_from_user_id = su.id
+      WHERE t.user_id = $1
+    `;
     const params = [sub];
 
     if (status) {
-      query += " AND status = $2";
+      query += " AND t.status = $2";
       params.push(status.toString());
     }
 
-    query += " ORDER BY position DESC NULLS LAST, id DESC";
+    query += " ORDER BY t.position DESC NULLS LAST, t.id DESC";
 
     const result = await pool.query(query, params);
 

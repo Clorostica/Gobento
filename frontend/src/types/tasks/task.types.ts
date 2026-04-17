@@ -12,6 +12,8 @@ export type Event = {
   position?: number | null; // Event position/order in the list
   image_url?: string | null; // Single image URL from uploadthing
   sharedFromUserId?: string | null; // ID of user who shared this event (if copied from another user)
+  sharedFromUsername?: string | null; // Username of the original creator
+  sharedFromUserAvatar?: string | null; // Avatar URL of the original creator
   originalEventId?: string | null; // ID of the original event that was copied (for tracking copied events)
   shareToken?: string | null; // Magic link token for public sharing
   dateOption1?: string | null; // First date option for the poll

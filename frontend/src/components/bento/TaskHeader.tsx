@@ -72,6 +72,11 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
     );
   }
 
+  const sharedAvatar = task.sharedFromUserAvatar || null;
+  const sharedInitial = task.sharedFromUsername
+    ? task.sharedFromUsername.charAt(0).toUpperCase()
+    : "?";
+
   return (
     <div>
       <h2
@@ -97,7 +102,36 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
           whiteSpace: "normal",
         }}
       >
-        {displayText}
+        <span className="inline-flex items-center gap-2 flex-wrap">
+          <span>{displayText}</span>
+          {!!task.sharedFromUserId && (
+            <span
+              className="inline-flex items-center gap-1 flex-shrink-0"
+              title={task.sharedFromUsername ? `From @${task.sharedFromUsername}` : "Shared from a friend"}
+            >
+              {sharedAvatar ? (
+                <img
+                  src={sharedAvatar}
+                  alt={task.sharedFromUsername || ""}
+                  className="rounded-full object-cover"
+                  style={{ width: 20, height: 20, border: "2px solid rgba(168,85,247,0.6)" }}
+                />
+              ) : (
+                <span
+                  className="rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                    color: "white",
+                  }}
+                >
+                  {sharedInitial}
+                </span>
+              )}
+            </span>
+          )}
+        </span>
       </h2>
     </div>
   );

@@ -8,6 +8,7 @@ import Header from "../components/Header";
 import TodoList from "../components/TodoList";
 import Search from "../components/Search";
 import EventFilter from "../components/TaskFilter";
+import FloatingActions from "../components/FloatingActions";
 import {
   requestNotificationPermission,
   checkOverdueEvents,
@@ -550,26 +551,21 @@ export default function HomePage() {
             <>
               <div className="flex flex-wrap items-center gap-3 mb-8">
                 <EventFilter filter={filter} setFilter={setFilter} />
-                <button
-                  onClick={() => {
-                    const status =
-                      filter === "all" ||
-                      filter === "liked" ||
-                      filter === "friends"
-                        ? "planned"
-                        : filter;
-                    handleAddEvent(
-                      status as "planned" | "upcoming" | "happened" | "private"
-                    );
-                  }}
-                  className="ml-auto flex-shrink-0 px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl text-lg sm:text-base font-bold transition-all duration-300 hover:scale-110 active:scale-95 whitespace-nowrap flex items-center gap-2 border-2 border-dashed border-purple-400 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white hover:from-purple-500/50 hover:to-pink-500/50 hover:border-purple-300 backdrop-blur-sm shadow-lg shadow-purple-500/20"
-                  style={{ backgroundColor: "#060010" }}
-                  title="Add New Event"
-                >
-                  <span className="text-2xl sm:text-xl flex-shrink-0">+</span>
-                  <span>Add Event</span>
-                </button>
               </div>
+
+              <FloatingActions
+                onAddEvent={() => {
+                  const status =
+                    filter === "all" ||
+                    filter === "liked" ||
+                    filter === "friends"
+                      ? "planned"
+                      : filter;
+                  handleAddEvent(
+                    status as "planned" | "upcoming" | "happened" | "private"
+                  );
+                }}
+              />
               <TodoList
                 isAuthenticated={isAuthenticated}
                 todos={events}

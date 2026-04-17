@@ -7,14 +7,13 @@ import BentoCardGrid from "./bento/BentoCardGrid";
 import GlobalSpotlight from "./bento/GlobalSpotlight";
 import TaskCardContent from "./bento/TaskCardContent";
 import ImageModal from "./bento/ImageModal";
+import EventDetailModal from "./bento/EventDetailModal";
 import {
   DEFAULT_PARTICLE_COUNT,
   DEFAULT_SPOTLIGHT_RADIUS,
   DEFAULT_GLOW_COLOR,
   MOBILE_BREAKPOINT,
   getStatusColor,
-  getStatusLabel,
-  getStatusIcon,
   getStatusBorderColor,
   getStatusShadow,
 } from "./bento/utils";
@@ -135,6 +134,7 @@ const MagicBento: React.FC<BentoProps> = ({
   const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
   const [dragOverEventId, setDragOverEventId] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
 
   const handleEditStart = (event: Event) => {
@@ -313,7 +313,6 @@ const MagicBento: React.FC<BentoProps> = ({
       isDragOver ? "ring-4 ring-purple-400 ring-opacity-50" : ""
     }`;
 
-    // Check if event is shared from a friend
     const isSharedEvent =
       event.sharedFromUserId != null &&
       event.sharedFromUserId !== undefined &&
@@ -328,12 +327,12 @@ const MagicBento: React.FC<BentoProps> = ({
         borderColor: getStatusBorderColor(statusToUse),
         boxShadow: getStatusShadow(statusToUse),
         "--glow-color": glowColor,
-        cursor: onReorder && editingId !== event.id ? "grab" : "default",
+        cursor: onReorder ? "grab" : "pointer",
       } as React.CSSProperties,
     };
 
     const dragProps =
-      onReorder && editingId !== event.id
+      onReorder
         ? {
             draggable: true,
             onDragStart: (e: React.DragEvent) => handleDragStart(e, event.id),
@@ -344,128 +343,38 @@ const MagicBento: React.FC<BentoProps> = ({
           }
         : {};
 
-    const handleHeaderKeyDown = (e: React.KeyboardEvent, event: Event) => {
-      if (isReadOnly) return; // Prevent editing in read-only mode
-      if (onEdit && editingId !== event.id && editingId === null) {
-        const isTyping =
-          e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-        if (
-          isTyping ||
-          e.key === "Backspace" ||
-          e.key === "Delete" ||
-          e.key === "Enter"
-        ) {
-          e.preventDefault();
-          handleEditStart(event);
-          if (isTyping) {
-            setTimeout(() => {
-              setEditTitle((prev) => {
-                const currentTitle = prev || event.title || event.text || "";
-                return currentTitle + e.key;
-              });
-              setTimeout(() => {
-                const titleTextarea = document.querySelector(
-                  `textarea[data-task-id="${event.id}"]:not([data-task-id*="-description"])`
-                ) as HTMLTextAreaElement;
-                if (
-                  titleTextarea &&
-                  !titleTextarea
-                    .getAttribute("data-task-id")
-                    ?.includes("description")
-                ) {
-                  titleTextarea.focus();
-                  titleTextarea.setSelectionRange(
-                    titleTextarea.value.length,
-                    titleTextarea.value.length
-                  );
-                }
-              }, 10);
-            }, 0);
-          } else {
-            setTimeout(() => {
-              const titleTextarea = document.querySelector(
-                `textarea[data-task-id="${event.id}"]:not([data-task-id*="-description"])`
-              ) as HTMLTextAreaElement;
-              if (titleTextarea) {
-                titleTextarea.focus();
-              }
-            }, 10);
-          }
-        }
-      }
-    };
-
-    const cardContentProps: {
-      task: Event;
-      editingId: string | null;
-      editTitle: string;
-      editText: string;
-      editDueDate: string;
-      editStartTime: string;
-      editAddress: string;
-      editImages: string[];
-      onEditStart: (event: Event) => void;
-      onEditSave: (eventId: string) => void;
-      onEditCancel: () => void;
-      onTitleChange: (value: string) => void;
-      onTextChange: (value: string) => void;
-      onDueDateChange: (value: string) => void;
-      onStartTimeChange: (value: string) => void;
-      onAddressChange: (value: string) => void;
-      onImagesChange: (images: string[]) => void;
-      onEmojiSelect: (emoji: string) => void;
-      onStatusClick: (event: Event) => void;
-      onStatusChange:
-        | ((
-            id: string,
-            status: string | "planned" | "upcoming" | "happened"
-          ) => void)
-        | undefined;
-      onImageClick: (image: string) => void;
-      onHeaderKeyDown: (e: React.KeyboardEvent, event: Event) => void;
-      onDelete?: (id: string) => void;
-      onLikeToggle?: (event: Event) => void;
-      isReadOnly?: boolean;
-      onCopyEvent?: (event: Event) => void;
-      copiedEventIds?: Set<string>;
-      copyingEventId?: string | null;
-    } = {
+    // In the compact grid card, clicking opens the modal instead of inline edit
+    const cardContentProps = {
       task: event,
-      editingId,
-      editTitle,
-      editText,
-      editDueDate,
-      editStartTime,
-      editAddress,
-      editImages,
-      onEditStart: handleEditStart,
-      onEditSave: handleEditSave,
-      onEditCancel: handleEditCancel,
-      onTitleChange: setEditTitle,
-      onTextChange: setEditText,
-      onDueDateChange: setEditDueDate,
-      onStartTimeChange: setEditStartTime,
-      onAddressChange: setEditAddress,
-      onImagesChange: setEditImages,
-      onEmojiSelect: handleEmojiSelect,
+      editingId: null as null,        // never enter edit mode inline
+      editTitle: "",
+      editText: "",
+      editDueDate: "",
+      editStartTime: "",
+      editAddress: "",
+      editImages: [] as string[],
+      onEditStart: (ev: Event) => setExpandedEventId(ev.id), // open modal
+      onEditSave: (_id: string) => {},
+      onEditCancel: () => {},
+      onTitleChange: (_v: string) => {},
+      onTextChange: (_v: string) => {},
+      onDueDateChange: (_v: string) => {},
+      onStartTimeChange: (_v: string) => {},
+      onAddressChange: (_v: string) => {},
+      onImagesChange: (_imgs: string[]) => {},
+      onEmojiSelect: (_e: string) => {},
       onStatusClick: handleStatusClick,
       onStatusChange: onStatusChange,
-      onImageClick: setExpandedImage,
-      onHeaderKeyDown: handleHeaderKeyDown,
+      onImageClick: (_url: string) => setExpandedEventId(event.id), // open modal for image too
       isReadOnly,
+      ...(onDelete ? { onDelete } : {}),
+      ...(onLikeToggle ? { onLikeToggle: () => handleLikeToggle(event) } : {}),
       ...(onCopyEvent ? { onCopyEvent } : {}),
       ...(copiedEventIds ? { copiedEventIds } : {}),
       ...(copyingEventId !== undefined ? { copyingEventId } : {}),
       ...(onShareEvent ? { onShareEvent } : {}),
       ...(onGetVotes ? { onGetVotes } : {}),
     };
-
-    if (onDelete) {
-      cardContentProps.onDelete = onDelete;
-    }
-    if (onLikeToggle) {
-      cardContentProps.onLikeToggle = () => handleLikeToggle(event);
-    }
 
     const cardContent = <TaskCardContent {...cardContentProps} />;
 
@@ -506,6 +415,13 @@ const MagicBento: React.FC<BentoProps> = ({
     );
   };
 
+  const expandedEvent = tasks.find((t) => t.id === expandedEventId) ?? null;
+
+  const handleCloseModal = () => {
+    handleEditCancel();
+    setExpandedEventId(null);
+  };
+
   return (
     <>
       {enableSpotlight && (
@@ -518,9 +434,48 @@ const MagicBento: React.FC<BentoProps> = ({
         />
       )}
 
-      <ImageModal
-        imageUrl={expandedImage}
-        onClose={() => setExpandedImage(null)}
+      {/* Image modal for outside-modal usage */}
+      {!expandedEventId && (
+        <ImageModal
+          imageUrl={expandedImage}
+          onClose={() => setExpandedImage(null)}
+        />
+      )}
+
+      {/* Event detail modal */}
+      <EventDetailModal
+        event={expandedEvent}
+        onClose={handleCloseModal}
+        expandedImage={expandedImage}
+        onImageClick={setExpandedImage}
+        onCloseImage={() => setExpandedImage(null)}
+        editingId={editingId}
+        editTitle={editTitle}
+        editText={editText}
+        editDueDate={editDueDate}
+        editStartTime={editStartTime}
+        editAddress={editAddress}
+        editImages={editImages}
+        onEditStart={handleEditStart}
+        onEditSave={handleEditSave}
+        onEditCancel={handleEditCancel}
+        onTitleChange={setEditTitle}
+        onTextChange={setEditText}
+        onDueDateChange={setEditDueDate}
+        onStartTimeChange={setEditStartTime}
+        onAddressChange={setEditAddress}
+        onImagesChange={setEditImages}
+        onEmojiSelect={handleEmojiSelect}
+        onStatusClick={handleStatusClick}
+        onStatusChange={onStatusChange}
+        isReadOnly={isReadOnly}
+        {...(onDelete ? { onDelete } : {})}
+        {...(onLikeToggle && expandedEvent ? { onLikeToggle: () => handleLikeToggle(expandedEvent) } : {})}
+        {...(onCopyEvent ? { onCopyEvent } : {})}
+        {...(copiedEventIds ? { copiedEventIds } : {})}
+        {...(copyingEventId !== undefined ? { copyingEventId } : {})}
+        {...(onShareEvent ? { onShareEvent } : {})}
+        {...(onGetVotes ? { onGetVotes } : {})}
       />
 
       <BentoCardGrid gridRef={gridRef}>

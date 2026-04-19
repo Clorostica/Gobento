@@ -51,7 +51,8 @@ router.get("/feed", authenticate, async (req, res) => {
       `SELECT t.id, t.user_id, t.status, t.text, t.title, t.color_class,
               t.address, t.due_date, t.start_time, t.image_url, t.images,
               t.liked, t.share_token, t.position,
-              u.username, u.avatar_url
+              u.username, u.avatar_url,
+              (SELECT COUNT(*) FROM task_list sc WHERE sc.original_event_id = t.id) AS share_count
        FROM task_list t
        JOIN users u ON t.user_id = u.id
        WHERE t.user_id IN (${placeholders})
@@ -79,7 +80,8 @@ router.get("/", authenticate, async (req, res) => {
     let query = `
       SELECT t.*,
              su.username AS shared_from_username,
-             su.avatar_url AS shared_from_user_avatar
+             su.avatar_url AS shared_from_user_avatar,
+             (SELECT COUNT(*) FROM task_list sc WHERE sc.original_event_id = t.id) AS share_count
       FROM task_list t
       LEFT JOIN users su ON t.shared_from_user_id = su.id
       WHERE t.user_id = $1
@@ -167,7 +169,11 @@ router.get("/user/:userId", authenticate, async (req, res) => {
 
     // Get user's events
     const result = await pool.query(
-      "SELECT * FROM task_list WHERE user_id = $1 ORDER BY position DESC NULLS LAST, id DESC",
+      `SELECT t.*,
+              (SELECT COUNT(*) FROM task_list sc WHERE sc.original_event_id = t.id) AS share_count
+       FROM task_list t
+       WHERE t.user_id = $1
+       ORDER BY t.position DESC NULLS LAST, t.id DESC`,
       [userId]
     );
 

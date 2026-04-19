@@ -206,9 +206,9 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
             {/* Scroll hint — sticky to the bottom of the scrollable modal */}
             {canScrollMore && (
               <div
-                className="sticky bottom-0 left-0 right-0 h-16 pointer-events-none flex flex-col items-center justify-end pb-3 gap-0.5"
+                className="sticky bottom-0 left-0 right-0 h-12 pointer-events-none flex flex-col items-center justify-end pb-2 gap-0.5"
                 style={{
-                  background: "linear-gradient(to top, rgba(10,0,21,0.97) 0%, transparent 100%)",
+                  background: "linear-gradient(to top, rgba(10,0,21,0.85) 0%, transparent 100%)",
                 }}
               >
                 <svg

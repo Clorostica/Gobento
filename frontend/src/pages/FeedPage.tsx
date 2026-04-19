@@ -24,6 +24,7 @@ interface FeedEvent {
   liked?: number;
   username?: string;
   avatar_url?: string;
+  share_count?: number;
 }
 
 interface Profile {
@@ -277,12 +278,22 @@ export default function FeedPage() {
               const colors = STATUS_COLORS[event.status] ?? DEFAULT_COLORS;
               const firstImage = event.images?.[0] || event.image_url;
               const initial = (event.username || "?").charAt(0).toUpperCase();
+              const isViral = (event.share_count ?? 0) >= 100;
 
               return (
                 <article
                   key={event.id}
-                  className="rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5"
-                  style={{ background: colors.bg, border: `1px solid ${colors.border}` }}
+                  className={`rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 ${isViral ? "viral-event" : ""}`}
+                  style={{
+                    background: colors.bg,
+                    border: isViral ? "1px solid transparent" : `1px solid ${colors.border}`,
+                    backgroundImage: isViral
+                      ? `${colors.bg}, linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #f59e0b)`
+                      : undefined,
+                    backgroundOrigin: isViral ? "border-box" : undefined,
+                    backgroundClip: isViral ? "padding-box, border-box" : undefined,
+                    boxShadow: isViral ? "0 0 24px rgba(245,158,11,0.3), 0 0 48px rgba(139,92,246,0.2)" : undefined,
+                  }}
                 >
                   {/* Card header: author */}
                   <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
@@ -303,6 +314,11 @@ export default function FeedPage() {
                     </button>
 
                     <div className="flex items-center gap-2 ml-auto">
+                      {isViral && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-gradient-to-r from-amber-500/30 to-pink-500/30 border border-amber-400/40 text-amber-300 animate-pulse">
+                          🔥 {event.share_count}+ shares
+                        </span>
+                      )}
                       <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${colors.badge}`}>
                         {STATUS_ICONS[event.status]} {STATUS_LABELS[event.status] || event.status}
                       </span>
@@ -312,7 +328,12 @@ export default function FeedPage() {
                   {/* Image */}
                   {firstImage && (
                     <div className="px-4 mb-3">
-                      <img src={firstImage} alt={event.title} className="w-full rounded-xl object-cover max-h-64" />
+                      <img
+                        src={firstImage}
+                        alt={event.title}
+                        className="w-full rounded-xl object-cover max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => navigate(`/user/${event.user_id}`)}
+                      />
                     </div>
                   )}
 

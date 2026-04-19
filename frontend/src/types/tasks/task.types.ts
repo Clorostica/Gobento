@@ -18,6 +18,7 @@ export type Event = {
   shareToken?: string | null; // Magic link token for public sharing
   dateOption1?: string | null; // First date option for the poll
   dateOption2?: string | null; // Second date option for the poll
+  shareCount?: number | null; // How many users have copied/shared this event
 };
 
 // Keep Task as alias for backward compatibility during migration

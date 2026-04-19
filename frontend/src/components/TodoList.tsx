@@ -123,6 +123,7 @@ const normalizeEventForStorage = (event: Event): Event => {
     sharedFromUserId: event.sharedFromUserId || null,
     sharedFromUsername: event.sharedFromUsername || null,
     sharedFromUserAvatar: event.sharedFromUserAvatar || null,
+    shareCount: event.shareCount ?? null,
     position: event.position !== undefined ? event.position : null,
   };
 };

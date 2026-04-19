@@ -318,16 +318,25 @@ const MagicBento: React.FC<BentoProps> = ({
       event.sharedFromUserId !== undefined &&
       event.sharedFromUserId !== "";
     const statusToUse = isSharedEvent ? "friends" : event.status;
+    const isViral = (event.shareCount ?? 0) >= 100;
 
     const eventColor = getStatusColor(statusToUse);
     const cardProps = {
-      className: baseClassName,
+      className: `${baseClassName}${isViral ? " viral-bento-card" : ""}`,
       style: {
         background: eventColor,
-        borderColor: getStatusBorderColor(statusToUse),
-        boxShadow: getStatusShadow(statusToUse),
-        "--glow-color": glowColor,
+        borderColor: isViral ? "transparent" : getStatusBorderColor(statusToUse),
+        boxShadow: isViral
+          ? `${getStatusShadow(statusToUse)}, 0 0 24px rgba(245,158,11,0.35), 0 0 48px rgba(236,72,153,0.2)`
+          : getStatusShadow(statusToUse),
+        "--glow-color": isViral ? "245, 158, 11" : glowColor,
         cursor: onReorder ? "grab" : "pointer",
+        ...(isViral ? {
+          backgroundImage: `${eventColor}, linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #f59e0b)`,
+          backgroundOrigin: "border-box",
+          backgroundClip: "padding-box, border-box",
+          border: "1px solid transparent",
+        } : {}),
       } as React.CSSProperties,
     };
 

@@ -476,58 +476,39 @@ export default function HomePage() {
       >
         <header
           ref={headerRef}
-          className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/80 border-b border-gray-700 shadow-md"
+          className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/80 border-b border-white/10 shadow-md"
         >
-          {/* Main row */}
-          <div className="flex items-center justify-between w-full px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4">
+          <div className="flex items-center w-full px-3 sm:px-5 lg:px-6 py-2.5">
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                />
+            <Link to="/" className="no-underline flex items-center gap-2 flex-shrink-0 group mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
-              <Link to="/" className="no-underline">
-                <h1 className="text-white font-bold text-lg sm:text-xl flex-shrink-0 hover:opacity-80 transition-opacity">
-                  Gobento
-                </h1>
-              </Link>
-              {/* Search — visible solo en sm+ */}
-              <div className="hidden sm:block ml-2 sm:ml-3">
-                <Search
-                  search={search}
-                  setSearch={setSearch}
-                  searchType={searchType}
-                  onSearchTypeChange={setSearchType}
-                />
-              </div>
+              <span className="text-white font-extrabold text-base sm:text-lg tracking-tight group-hover:opacity-80 transition-opacity">Gobento</span>
+            </Link>
+
+            <div className="h-5 w-px flex-shrink-0 mr-4" style={{ background: "rgba(255,255,255,0.12)" }} />
+
+            {/* Search — expands to fill center */}
+            <div className="flex-1 min-w-0 max-w-md hidden sm:block">
+              <Search search={search} setSearch={setSearch} />
             </div>
-            {/* User */}
-            <div className="flex-shrink-0">
+            <div className="flex-1 sm:hidden" />
+
+            {/* Right side: nav + user */}
+            <div className="flex items-center gap-1.5 flex-shrink-0 ml-3">
               <Header
                 token={token}
                 API_URL={env.API_URL}
-                initialDisplayName={cachedUsername || profile?.username || null}
+                initialDisplayName={profile?.username || cachedUsername || null}
+                avatarUrl={profile?.avatarUrl || null}
+                onEditProfile={() => setShowUsernameModal(true)}
               />
             </div>
           </div>
-          {/* Search mobile — segunda fila solo en mobile */}
-          <div className="sm:hidden px-4 pb-3">
-            <Search
-              search={search}
-              setSearch={setSearch}
-              searchType={searchType}
-              onSearchTypeChange={setSearchType}
-            />
+          {/* Search — mobile only second row */}
+          <div className="sm:hidden px-3 pb-2.5">
+            <Search search={search} setSearch={setSearch} />
           </div>
         </header>
         {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
@@ -536,152 +517,119 @@ export default function HomePage() {
           style={{ height: "var(--header-h)", flexShrink: 0 }}
         />
 
-        {/* Sticky filter bar — always visible just below the header */}
+        {/* ── Mobile/tablet sticky filter bar (hidden on lg+) ─────────── */}
         <div
-          className="sticky z-40 w-full backdrop-blur-md border-b"
-          style={{
-            top: "var(--header-h, 64px)",
-            background: "rgba(0,0,0,0.75)",
-            borderColor: "rgba(139,92,246,0.12)",
-          }}
+          className="lg:hidden sticky z-40 w-full backdrop-blur-md border-b"
+          style={{ top: "var(--header-h, 64px)", background: "rgba(0,0,0,0.8)", borderColor: "rgba(139,92,246,0.12)" }}
         >
-          <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2">
-            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none">
+          <div className="px-3 py-2">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
               <EventFilter
                 filter={filter}
                 setFilter={setFilter}
                 onAddEvent={() => {
-                  const status =
-                    filter === "all" || filter === "liked" || filter === "friends"
-                      ? "planned"
-                      : filter;
+                  const status = filter === "all" || filter === "liked" || filter === "friends" ? "planned" : filter;
                   handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
                 }}
               />
             </div>
           </div>
         </div>
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 flex-grow">
-          {searchType === "users" ? (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                {isSearchingUsers
-                  ? "Loading users..."
-                  : search.trim()
-                    ? `Found ${searchUsers.length} user${
-                        searchUsers.length !== 1 ? "s" : ""
-                      }`
-                    : `All users (${searchUsers.length})`}
-              </h2>
-              {isSearchingUsers ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin"></div>
-                </div>
-              ) : searchUsers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {searchUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      onClick={() => navigate(`/user/${user.id}`)}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/40"
-                    >
-                      <div className="flex items-center gap-3">
-                        {user.avatarUrl ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.username || ""}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white/20"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {(user.username || "?").charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold truncate">
-                            {user.username}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <p className="text-gray-400 text-lg">
-                    {search.trim()
-                      ? `No users found matching "${search}"`
-                      : "No users found in the system yet."}
-                  </p>
-                </div>
-              )}
+
+        {/* ── Body: sidebar (lg+) + content ───────────────────────────── */}
+        <div className="flex flex-1 min-h-0">
+
+          {/* Desktop sidebar */}
+          <aside
+            className="hidden lg:flex flex-col flex-shrink-0 w-52 xl:w-60 border-r sticky overflow-y-auto"
+            style={{
+              top: "var(--header-h, 56px)",
+              height: "calc(100vh - var(--header-h, 56px))",
+              background: "rgba(0,0,0,0.4)",
+              borderColor: "rgba(139,92,246,0.1)",
+            }}
+          >
+            <div className="flex flex-col gap-0.5 p-3 pt-4 flex-1">
+              {(
+                [
+                  { value: "all",      label: "All Events", icon: "🎉", tooltip: "Show all your events",                  gradient: "linear-gradient(135deg,#7c3aed,#a855f7)", glow: "rgba(139,92,246,0.4)" },
+                  { value: "planned",  label: "Ideas",      icon: "💡", tooltip: "Ideas — events you're planning",         gradient: "linear-gradient(135deg,#7e22ce,#c026d3)", glow: "rgba(192,38,211,0.4)" },
+                  { value: "upcoming", label: "Upcoming",   icon: "📅", tooltip: "Upcoming — happening soon",             gradient: "linear-gradient(135deg,#1d4ed8,#06b6d4)", glow: "rgba(59,130,246,0.4)" },
+                  { value: "happened", label: "Memories",   icon: "✨", tooltip: "Memories — past events",               gradient: "linear-gradient(135deg,#047857,#10b981)", glow: "rgba(16,185,129,0.4)" },
+                  { value: "private",  label: "Private",    icon: "🔒", tooltip: "Private — only visible to you",        gradient: "linear-gradient(135deg,#374151,#6b7280)", glow: "rgba(107,114,128,0.4)" },
+                  { value: "liked",    label: "Favorites",  icon: "❤️", tooltip: "Favorites — events you liked",          gradient: "linear-gradient(135deg,#be123c,#f43f5e)", glow: "rgba(244,63,94,0.4)" },
+                  { value: "friends",  label: "Friends",    icon: "👥", tooltip: "Friends — events from people you follow", gradient: "linear-gradient(135deg,#b45309,#f59e0b)", glow: "rgba(245,158,11,0.4)" },
+                ] as const
+              ).map((f) => {
+                const isActive = filter === f.value;
+                return (
+                  <button
+                    key={f.value}
+                    onClick={() => setFilter(f.value as typeof filter)}
+                    title={f.tooltip}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                      isActive ? "text-white" : "text-white/40 hover:text-white/80 hover:bg-white/[0.05]"
+                    }`}
+                    style={isActive ? { background: f.gradient, boxShadow: `0 2px 16px ${f.glow}` } : undefined}
+                  >
+                    <span className="text-base leading-none w-5 text-center flex-shrink-0">{f.icon}</span>
+                    <span className="flex-1 truncate">{f.label}</span>
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/60 flex-shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
-          ) : isLoadingEvents ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center space-y-4">
-                <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
-                <p className="text-gray-600">Loading events...</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <FloatingActions
-                onAddEvent={() => {
-                  const status =
-                    filter === "all" ||
-                    filter === "liked" ||
-                    filter === "friends"
-                      ? "planned"
-                      : filter;
-                  handleAddEvent(
-                    status as "planned" | "upcoming" | "happened" | "private",
-                  );
+
+            {/* Add event at bottom of sidebar */}
+            <div className="p-3 border-t" style={{ borderColor: "rgba(139,92,246,0.1)" }}>
+              <button
+                onClick={() => {
+                  const status = filter === "all" || filter === "liked" || filter === "friends" ? "planned" : filter;
+                  handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
                 }}
-              />
-              <TodoList
-                isAuthenticated={isAuthenticated}
-                todos={events}
-                setTodos={setEvents}
-                search={searchType === "events" ? search : ""}
-                filter={filter}
-                token={token}
-                profileOwnerName={
-                  profile?.name || profile?.email || "This user"
-                }
-              />
-            </>
-          )}
-        </main>
-        <footer
-          className="
-          w-full
-          py-4
-          text-center text-sm
-          z-50
-          mt-auto
-        "
-        >
-          <p className="flex items-center justify-center gap-1">
-            Created with <span className="text-pink-500 animate-pulse">♥</span>{" "}
-            by{" "}
-            <a
-              href="https://github.com/Clorostica"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-              font-semibold
-              text-pink-500
-              no-underline
-              visited:text-pink-500
-              transition
-              hover:text-pink-400
-              hover:drop-shadow-[0_0_8px_#ec4899]
-               "
-            >
-              Clorostica
-            </a>
-          </p>
-        </footer>
+                className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-white/60 hover:text-white border border-dashed border-white/15 hover:border-purple-400/50 hover:bg-purple-500/10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Event
+              </button>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="flex-1 min-w-0 pb-8">
+            {isLoadingEvents ? (
+              <div className="flex items-center justify-center py-24">
+                <div className="text-center space-y-4">
+                  <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-400 rounded-full animate-spin mx-auto" />
+                  <p className="text-white/40 text-sm">Loading events…</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* FAB — only on mobile/tablet where sidebar is hidden */}
+                <div className="lg:hidden">
+                  <FloatingActions
+                    onAddEvent={() => {
+                      const status = filter === "all" || filter === "liked" || filter === "friends" ? "planned" : filter;
+                      handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
+                    }}
+                  />
+                </div>
+                <TodoList
+                  isAuthenticated={isAuthenticated}
+                  todos={events}
+                  setTodos={setEvents}
+                  search={search}
+                  filter={filter}
+                  token={token}
+                  profileOwnerName={profile?.name || profile?.email || "This user"}
+                />
+              </>
+            )}
+          </main>
+        </div>
       </div>
 
       <UsernameModal

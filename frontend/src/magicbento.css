@@ -20,9 +20,9 @@
     position: relative;
     user-select: none;
     width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
@@ -30,8 +30,8 @@
     grid-auto-rows: auto !important;
     display: grid;
     gap: 1rem;
-    padding: 1rem;
-    font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem);
+    padding: 0.75rem;
+    font-size: clamp(0.9rem, 0.85rem + 0.4vw, 1.3rem);
     width: 100%;
 }
 
@@ -40,10 +40,10 @@
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-    min-height: 500px;
+    min-height: 280px;
     width: 100%;
     padding: 1.25rem 1.5rem 1.5rem 1.5rem;
-    border-radius: 24px;
+    border-radius: 20px;
     border: 1px solid var(--border-color);
     background: var(--background-dark);
     font-weight: 300;
@@ -147,68 +147,75 @@
 
 /* RESPONSIVE LAYOUT */
 
-/* Mobile: stack vertical */
+/* Mobile: single column */
 @media (max-width: 599px) {
     .card-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
-        padding: 0.75rem;
+        padding: 0.5rem;
         grid-auto-rows: auto;
     }
-
     .magic-bento-card {
-        padding: 1rem 1.25rem 1.5rem 1.25rem;
+        padding: 1rem 1.25rem 1.25rem 1.25rem;
         height: auto;
-        min-height: 300px;
+        min-height: 200px;
+        border-radius: 16px;
     }
 }
 
-/* Tablet: 1 wide + 2 halves repeating */
+/* Tablet: 2-column bento */
 @media (min-width: 600px) and (max-width: 1023px) {
     .card-grid {
         grid-template-columns: repeat(4, 1fr);
         gap: 1rem;
         grid-auto-rows: auto;
     }
-
     .magic-bento-card {
         height: auto;
-        min-height: 350px;
+        min-height: 260px;
     }
-
     .magic-bento-card:nth-child(3n+1) { grid-column: span 4; }
     .magic-bento-card:nth-child(3n+2),
     .magic-bento-card:nth-child(3n+0) { grid-column: span 2; }
 }
 
-/* Desktop: fixed 5-card repeating bento pattern on 12-column grid
-   Row A: [pos1: 7 cols] [pos2: 5 cols]
-   Row B: [pos3: 4 cols] [pos4: 4 cols] [pos5: 4 cols]
-*/
+/* Desktop: 12-column bento grid */
 @media (min-width: 1024px) {
     .card-grid {
         grid-template-columns: repeat(12, 1fr);
         grid-auto-rows: auto;
-        gap: 1.25rem;
+        gap: 1.1rem;
     }
-
-    .magic-bento-card:nth-child(5n+1) { grid-column: span 7; min-height: 500px; }
-    .magic-bento-card:nth-child(5n+2) { grid-column: span 5; min-height: 500px; }
-    .magic-bento-card:nth-child(5n+3) { grid-column: span 4; min-height: 400px; }
-    .magic-bento-card:nth-child(5n+4) { grid-column: span 4; min-height: 400px; }
-    .magic-bento-card:nth-child(5n+0) { grid-column: span 4; min-height: 400px; }
+    .magic-bento-card:nth-child(5n+1) { grid-column: span 7; min-height: 320px; }
+    .magic-bento-card:nth-child(5n+2) { grid-column: span 5; min-height: 320px; }
+    .magic-bento-card:nth-child(5n+3) { grid-column: span 4; min-height: 260px; }
+    .magic-bento-card:nth-child(5n+4) { grid-column: span 4; min-height: 260px; }
+    .magic-bento-card:nth-child(5n+0) { grid-column: span 4; min-height: 260px; }
 }
 
-/* Extra Large */
+/* Large desktop: tighter gap, more density */
 @media (min-width: 1440px) {
     .card-grid {
-        gap: 1.5rem;
-        padding: 1.5rem;
+        gap: 1.25rem;
+        padding: 1rem;
     }
-
     .magic-bento-card {
-        padding: 1.5rem 2rem 2rem 2rem;
+        padding: 1.25rem 1.75rem 1.75rem 1.75rem;
     }
+    .magic-bento-card:nth-child(5n+1) { min-height: 340px; }
+    .magic-bento-card:nth-child(5n+2) { min-height: 340px; }
+}
+
+/* Ultra-wide: use more columns for better density */
+@media (min-width: 1920px) {
+    .card-grid {
+        grid-template-columns: repeat(16, 1fr);
+    }
+    .magic-bento-card:nth-child(5n+1) { grid-column: span 9; }
+    .magic-bento-card:nth-child(5n+2) { grid-column: span 7; }
+    .magic-bento-card:nth-child(5n+3) { grid-column: span 5; }
+    .magic-bento-card:nth-child(5n+4) { grid-column: span 6; }
+    .magic-bento-card:nth-child(5n+0) { grid-column: span 5; }
 }
 
 /* Border glow effect */

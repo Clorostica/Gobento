@@ -134,28 +134,30 @@ export default function EventFilter({ filter, setFilter, onAddEvent }: EventFilt
       {/* Add event — icon-only on mobile, icon+label on sm+ */}
       {onAddEvent && (
         <>
-          {/* Mobile: icon-only with native tooltip */}
+          {/* Mobile: icon-only, solid purple */}
           <button
             onClick={onAddEvent}
             title="Add new event"
             aria-label="Add new event"
-            className="sm:hidden flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-white/50 hover:text-white transition-all border border-dashed border-white/20 hover:border-purple-400/60 hover:bg-purple-500/10 ml-1"
+            className="sm:hidden flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-white transition-all active:scale-95 ml-1"
+            style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", boxShadow: "0 3px 14px rgba(139,92,246,0.5)" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
           </button>
 
-          {/* Desktop: icon + label with Tooltip */}
+          {/* Desktop (sm): icon + label, solid purple — only shown in the mobile/tablet filter strip (sm range) */}
           <Tooltip label="Add new event" position="bottom" className="hidden sm:inline-flex flex-shrink-0 ml-1">
             <button
               onClick={onAddEvent}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-white/50 hover:text-white transition-all duration-200 border border-dashed border-white/20 hover:border-purple-400/60 hover:bg-purple-500/10"
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-white text-xs font-bold transition-all duration-200 active:scale-95"
+              style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", boxShadow: "0 3px 14px rgba(139,92,246,0.5)" }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-xs font-semibold">Add</span>
+              <span>Add</span>
             </button>
           </Tooltip>
         </>

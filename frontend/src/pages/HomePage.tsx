@@ -490,7 +490,7 @@ export default function HomePage() {
             <div className="h-5 w-px flex-shrink-0 mr-4" style={{ background: "rgba(255,255,255,0.12)" }} />
 
             {/* Search — expands to fill center */}
-            <div className="flex-1 min-w-0 max-w-md hidden sm:block">
+            <div className="flex-1 min-w-0 hidden sm:block">
               <Search search={search} setSearch={setSearch} />
             </div>
             <div className="flex-1 sm:hidden" />
@@ -587,7 +587,13 @@ export default function HomePage() {
                   const status = filter === "all" || filter === "liked" || filter === "friends" ? "planned" : filter;
                   handleAddEvent(status as "planned" | "upcoming" | "happened" | "private");
                 }}
-                className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-white/60 hover:text-white border border-dashed border-white/15 hover:border-purple-400/50 hover:bg-purple-500/10"
+                className="flex items-center justify-center gap-2 w-full px-3 py-3 rounded-xl text-sm font-bold transition-all text-white active:scale-95"
+                style={{
+                  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                  boxShadow: "0 4px 20px rgba(139,92,246,0.45)",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 6px 28px rgba(139,92,246,0.65)")}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.45)")}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

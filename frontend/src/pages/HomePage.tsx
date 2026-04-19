@@ -16,6 +16,8 @@ import TodoList from "../components/TodoList";
 import Search from "../components/Search";
 import EventFilter from "../components/TaskFilter";
 import FloatingActions from "../components/FloatingActions";
+import StarBorder from "../components/StarBorder";
+import Tooltip from "../components/Tooltip";
 import {
   requestNotificationPermission,
   checkOverdueEvents,
@@ -487,7 +489,37 @@ export default function HomePage() {
               <span className="text-white font-extrabold text-base sm:text-lg tracking-tight group-hover:opacity-80 transition-opacity">Gobento</span>
             </Link>
 
-            <div className="h-5 w-px flex-shrink-0 mr-4" style={{ background: "rgba(255,255,255,0.12)" }} />
+            <div className="h-5 w-px flex-shrink-0 mr-3" style={{ background: "rgba(255,255,255,0.12)" }} />
+
+            {/* Nav shortcuts */}
+            <div className="flex items-center gap-1.5 flex-shrink-0 mr-3">
+              <Tooltip label="My Events" position="bottom">
+                <StarBorder
+                  onClick={() => {}}
+                  className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-default"
+                  color="#B19EEF"
+                  speed="6s"
+                  thickness={2}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </StarBorder>
+              </Tooltip>
+              <Tooltip label="Feed" position="bottom">
+                <StarBorder
+                  onClick={() => navigate("/feed")}
+                  className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer"
+                  color="#FB923C"
+                  speed="6s"
+                  thickness={2}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </StarBorder>
+              </Tooltip>
+            </div>
 
             {/* Search — expands to fill center */}
             <div className="flex-1 min-w-0 hidden sm:block">

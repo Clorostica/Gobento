@@ -543,10 +543,10 @@ export default function HomePage() {
             <Search search={search} setSearch={setSearch} />
           </div>
         </header>
-        {/* Spacer — CSS var --header-h defaults to 72px, updated to exact height by ResizeObserver */}
+        {/* Spacer — 110px fallback covers mobile 2-row header; ResizeObserver updates --header-h to exact value */}
         <div
           aria-hidden="true"
-          style={{ height: "var(--header-h)", flexShrink: 0 }}
+          style={{ height: "var(--header-h, 110px)", flexShrink: 0 }}
         />
 
         {/* ── Mobile/tablet sticky filter bar (hidden on lg+) ─────────── */}
@@ -575,8 +575,8 @@ export default function HomePage() {
           <aside
             className="hidden lg:flex flex-col flex-shrink-0 w-52 xl:w-60 border-r sticky overflow-y-auto"
             style={{
-              top: "var(--header-h, 56px)",
-              height: "calc(100vh - var(--header-h, 56px))",
+              top: "var(--header-h, 110px)",
+              height: "calc(100vh - var(--header-h, 110px))",
               background: "rgba(0,0,0,0.4)",
               borderColor: "rgba(139,92,246,0.1)",
             }}

@@ -139,7 +139,7 @@ router.get("/user/:userId", authenticate, async (req, res) => {
     // Check if user exists
     // Only select columns that exist in the table
     const userCheck = await pool.query(
-      "SELECT id, email, username FROM users WHERE id = $1",
+      "SELECT id, email, username, avatar_url FROM users WHERE id = $1",
       [userId]
     );
 
@@ -198,6 +198,7 @@ router.get("/user/:userId", authenticate, async (req, res) => {
         id: targetUser.id,
         email: targetUser.email,
         username: targetUser.username || null,
+        avatar_url: targetUser.avatar_url || null,
       },
       followers: followersResult.rows,
     });

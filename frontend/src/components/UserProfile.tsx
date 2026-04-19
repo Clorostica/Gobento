@@ -132,7 +132,7 @@ export default function UserProfile() {
                 email: userInfo.email || "",
                 name: userInfo.name,
                 username: userInfo.username,
-                picture: userInfo.picture,
+                picture: userInfo.avatar_url || userInfo.picture || null,
               });
             }
           } catch (error) {
@@ -180,7 +180,7 @@ export default function UserProfile() {
         email: userInfo.email || "",
         name: userInfo.name,
         username: userInfo.username,
-        picture: userInfo.picture,
+        picture: userInfo.avatar_url || userInfo.picture || null,
       });
 
       setEvents(convertedEvents);

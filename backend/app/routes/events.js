@@ -284,10 +284,27 @@ router.post("/", authenticate, async (req, res) => {
       willSave: !!sharedFromUserIdValue,
     });
 
-    // If this is a copied event (has shared_from_user_id), assign a high position to show it first
+    // If this is a copied event (has shared_from_user_id), guard against duplicates
     let positionValue = null;
-    if (sharedFromUserIdValue) {
-      // Get the maximum position for this user and add 1, or use a high number
+    if (sharedFromUserIdValue && originalEventIdValue) {
+      // Check if user already has a copy of this original event
+      const dupCheck = await pool.query(
+        "SELECT id FROM task_list WHERE user_id = $1 AND original_event_id = $2 LIMIT 1",
+        [userId, originalEventIdValue]
+      );
+      if (dupCheck.rows.length > 0) {
+        console.log("⚠️ Duplicate copy prevented:", {
+          userId,
+          originalEventId: originalEventIdValue,
+          existingId: dupCheck.rows[0].id,
+        });
+        return res.status(409).json({
+          error: "Already copied",
+          existingId: dupCheck.rows[0].id,
+        });
+      }
+
+      // Assign a high position to show it first
       const maxPositionResult = await pool.query(
         "SELECT COALESCE(MAX(position), 0) as max_position FROM task_list WHERE user_id = $1",
         [userId]

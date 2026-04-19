@@ -569,6 +569,12 @@ export default function UserProfile() {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          // 409 = already copied — treat as success, keep optimistic state
+          if (response.status === 409) {
+            console.log("⚠️ Backend: already copied, keeping state as-is");
+            setCopyingEventId(null);
+            return;
+          }
           console.error("❌ Copy event failed:", errorData);
           throw new Error(errorData.error || "Failed to copy event");
         }

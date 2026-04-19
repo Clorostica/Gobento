@@ -491,8 +491,8 @@ export default function HomePage() {
 
             <div className="h-5 w-px flex-shrink-0 mr-3" style={{ background: "rgba(255,255,255,0.12)" }} />
 
-            {/* Nav shortcuts */}
-            <div className="flex items-center gap-1.5 flex-shrink-0 mr-3">
+            {/* Nav shortcuts — hidden on mobile where sidebar/filter bar handles nav */}
+            <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 mr-3">
               <Tooltip label="My Events" position="bottom">
                 <StarBorder
                   onClick={() => {}}
@@ -551,10 +551,10 @@ export default function HomePage() {
 
         {/* ── Mobile/tablet sticky filter bar (hidden on lg+) ─────────── */}
         <div
-          className="lg:hidden sticky z-40 w-full backdrop-blur-md border-b"
-          style={{ top: "var(--header-h, 64px)", background: "rgba(0,0,0,0.8)", borderColor: "rgba(139,92,246,0.12)" }}
+          className="lg:hidden sticky z-40 w-full backdrop-blur-md border-b border-t"
+          style={{ top: "var(--header-h, 110px)", background: "rgba(0,0,0,0.85)", borderColor: "rgba(139,92,246,0.15)" }}
         >
-          <div className="px-3 py-2">
+          <div className="px-3 py-2.5">
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
               <EventFilter
                 filter={filter}

@@ -246,8 +246,16 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                 </Tooltip>
 
                 {showStatusMenu && (
-                  <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-md border border-purple-400/30 rounded-lg shadow-xl z-[100] py-1 min-w-[140px]">
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider border-b border-purple-400/10 mb-1">
+                  <div
+                    className="absolute right-0 top-full mt-2 rounded-xl overflow-hidden z-[100] py-1 min-w-[150px]"
+                    style={{
+                      background: "rgba(5,0,20,0.97)",
+                      border: "1px solid rgba(139,92,246,0.25)",
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+                      backdropFilter: "blur(16px)",
+                    }}
+                  >
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider border-b mb-1" style={{ borderColor: "rgba(139,92,246,0.12)" }}>
                       Change status
                     </div>
                     {statuses.map((status) => (
@@ -262,16 +270,17 @@ const TaskCardContent: React.FC<TaskCardContentProps> = ({
                           }
                           setShowStatusMenu(false);
                         }}
-                        className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-purple-400/10 last:border-b-0 ${
+                        className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/[0.06] transition-colors border-b last:border-b-0 ${
                           task.status === status
-                            ? "text-purple-400 font-semibold bg-white/5"
-                            : "text-white/70"
+                            ? "text-purple-300 font-semibold bg-white/[0.04]"
+                            : "text-white/60 hover:text-white/90"
                         }`}
+                        style={{ borderColor: "rgba(139,92,246,0.08)" }}
                       >
                         <span className="text-lg">{getStatusIcon(status)}</span>
                         <span className="text-xs">{getStatusLabelText(status)}</span>
                         {task.status === status && (
-                          <span className="ml-auto text-[10px]">●</span>
+                          <span className="ml-auto text-[10px] text-purple-400">●</span>
                         )}
                       </button>
                     ))}

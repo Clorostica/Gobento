@@ -82,9 +82,9 @@ const NotificationPanel = ({
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-purple-900/60 rounded-xl shadow-2xl shadow-purple-900/30 z-50 overflow-hidden">
+    <div className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden z-50" style={{ background: "rgba(5,0,20,0.97)", border: "1px solid rgba(139,92,246,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)", backdropFilter: "blur(16px)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-purple-900/40">
+      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(139,92,246,0.15)" }}>
         <span className="text-white font-semibold text-sm">Notifications</span>
         {unreadCount > 0 && (
           <button
@@ -109,9 +109,10 @@ const NotificationPanel = ({
               <div
                 key={n.id}
                 onClick={() => handleNotifClick(n)}
-                className={`flex items-start gap-3 px-4 py-3 border-b border-white/5 transition-colors ${
-                  n.read ? "opacity-60" : "bg-purple-900/10"
-                } ${isClickable ? "cursor-pointer hover:bg-purple-900/20" : ""}`}
+                className={`flex items-start gap-3 px-4 py-3 border-b last:border-b-0 transition-colors ${
+                  n.read ? "opacity-50" : "bg-purple-500/[0.06]"
+                } ${isClickable ? "cursor-pointer hover:bg-white/[0.05]" : ""}`}
+                style={{ borderColor: "rgba(139,92,246,0.08)" }}
               >
                 <span className="text-lg flex-shrink-0 mt-0.5">{notifIcon(n.type)}</span>
                 <div className="flex-1 min-w-0">

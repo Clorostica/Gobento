@@ -765,37 +765,50 @@ export default function UserProfile() {
               </Tooltip>
             </div>
 
-            {/* Center — friend's profile info + unfollow dropdown */}
-            <div className="flex-1 min-w-0 flex items-center justify-center">
+            {/* Center — friend's profile info (prominent) */}
+            <div className="flex-1 min-w-0 flex items-center justify-center gap-3">
+
+              {/* Friend's identity — the focal point of this page */}
               <div className="relative" ref={friendMenuRef}>
                 <button
                   onClick={() => isFollowing && setShowFriendMenu((v) => !v)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors ${isFollowing ? "hover:bg-white/5 cursor-pointer" : "cursor-default"}`}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all ${isFollowing ? "hover:bg-white/[0.06] cursor-pointer" : "cursor-default"}`}
                 >
                   {profile.picture ? (
-                    <img src={profile.picture} alt={profile.username || ""} className="w-7 h-7 rounded-full object-cover ring-2 ring-purple-500/50 flex-shrink-0" />
+                    <img src={profile.picture} alt={profile.username || ""} className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-400/60 flex-shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-purple-500/40 flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-purple-400/50 flex-shrink-0">
                       {(profile.username || profile.name || profile.email || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-white font-semibold text-sm truncate max-w-[140px]">
-                    @{profile.username || profile.email}
-                  </span>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-white font-bold text-base sm:text-lg leading-tight truncate max-w-[180px]">
+                      {profile.username ? `@${profile.username}` : profile.email}
+                    </span>
+                    <span className="text-white/35 text-[11px] leading-tight">
+                      {isFollowing ? "Following" : "Not following"}
+                    </span>
+                  </div>
                   {isFollowing && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 text-white/40 flex-shrink-0 transition-transform ${showFriendMenu ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-3.5 h-3.5 text-white/30 flex-shrink-0 transition-transform ${showFriendMenu ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   )}
                 </button>
 
                 {showFriendMenu && (
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-xl overflow-hidden z-50"
-                    style={{ background: "rgba(5,0,20,0.97)", border: "1px solid rgba(139,92,246,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", backdropFilter: "blur(16px)" }}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-xl overflow-hidden z-50"
+                    style={{
+                      background: "rgba(5,0,20,0.97)",
+                      border: "1px solid rgba(139,92,246,0.25)",
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+                      backdropFilter: "blur(16px)",
+                    }}
                   >
                     <button
                       onClick={() => { setShowFriendMenu(false); setShowUnfollowConfirm(true); }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors text-left"
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/[0.06] transition-colors text-left"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
@@ -806,7 +819,7 @@ export default function UserProfile() {
                 )}
               </div>
 
-              {/* Follow button when not following */}
+              {/* Follow button — only when not following */}
               {!isFollowing && (
                 <StarBorder
                   onClick={handleFollowToggle}
@@ -814,7 +827,7 @@ export default function UserProfile() {
                   color="#B19EEF"
                   speed="6s"
                   thickness={2}
-                  className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] star-border-container cursor-pointer text-sm ml-2 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] star-border-container cursor-pointer text-sm disabled:opacity-50"
                 >
                   {isFollowLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

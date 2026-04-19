@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { v4 as uuidv4 } from "uuid";
 import type { Event } from "@/types/tasks/task.types";
 import Header from "./Header";
 import ReadOnlyTodoList from "./ReadOnlyTodoList";
 import StarBorder from "./StarBorder";
+import Tooltip from "./Tooltip";
+import { UsernameModal } from "./ui";
 import { COLOR_CLASSES } from "@/config/constants";
 
 interface UserProfileData {
@@ -46,6 +48,18 @@ export default function UserProfile() {
   const [copiedEventIds, setCopiedEventIds] = useState<Set<string>>(new Set());
   const [copyingEventId, setCopyingEventId] = useState<string | null>(null);
 
+  // Own profile data for the header
+  const [ownUsername, setOwnUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
+  const [ownAvatarUrl, setOwnAvatarUrl] = useState<string | null>(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  // Unfollow confirmation
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+  const [showFriendMenu, setShowFriendMenu] = useState(false);
+  const friendMenuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
   // Determinar si es el perfil del usuario actual
   const isOwnProfile = user?.sub === userId;
 
@@ -59,6 +73,18 @@ export default function UserProfile() {
 
       const idToken = tokenClaims.__raw;
       setToken(idToken);
+
+      // Fetch own profile for header display
+      try {
+        const meRes = await fetch(`${API_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          setOwnUsername(meData.username || null);
+          setOwnAvatarUrl(meData.avatar_url || meData.avatarUrl || null);
+        }
+      } catch { /* silent */ }
 
       console.log("🔍 Loading profile for user:", userId);
       console.log("👤 Current user:", user?.sub);
@@ -295,15 +321,63 @@ export default function UserProfile() {
     modalDismissed,
   ]);
 
+  // Close friend menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (friendMenuRef.current && !friendMenuRef.current.contains(e.target as Node)) {
+        setShowFriendMenu(false);
+      }
+    };
+    if (showFriendMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showFriendMenu]);
+
+  // --header-h CSS var
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) document.documentElement.style.setProperty("--header-h", `${h}px`);
+    };
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   const handleFollowToggle = async () => {
     if (!token || !userId) return;
 
-    // Si ya está siguiendo, unfollow directamente
     if (isFollowing) {
-      await executeFollowToggle(true);
+      // Show confirmation before unfollowing
+      setShowUnfollowConfirm(true);
+      setShowFriendMenu(false);
     } else {
-      // Si no está siguiendo, seguir directamente (acción explícita del usuario)
       await executeFollowToggle(false);
+    }
+  };
+
+  const handleEditProfileSubmit = async (username: string, avatarUrl?: string | null) => {
+    if (!token) return;
+    setIsUpdatingProfile(true);
+    try {
+      const res = await fetch(`${API_URL}/users/me`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ username, avatarUrl: avatarUrl ?? undefined }),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      const updated = await res.json();
+      setOwnUsername(updated.username || null);
+      setOwnAvatarUrl(updated.avatar_url || updated.avatarUrl || null);
+      if (updated.username) localStorage.setItem("gobento_username", updated.username);
+      setShowEditProfile(false);
+    } catch (err) {
+      if (err instanceof Error) throw err;
+      throw new Error("Failed to update profile. Please try again.");
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -664,103 +738,116 @@ export default function UserProfile() {
           flexDirection: "column",
         }}
       >
-        <header className="sticky top-0 z-50 w-full backdrop-blur-md border-b shadow-md" style={{ background: "rgba(5,0,20,0.92)", borderColor: "rgba(139,92,246,0.18)" }}>
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-3">
-            <div className="flex items-center gap-2">
+        <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-md" style={{ background: "rgba(5,0,20,0.92)", borderColor: "rgba(139,92,246,0.18)" }}>
+          <div className="flex items-center w-full px-3 sm:px-5 lg:px-8 xl:px-12 py-2.5 sm:py-3 gap-3">
 
-              {/* Left — nav shortcuts */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {/* Home */}
-                <StarBorder
-                  onClick={() => navigate("/")}
-                  color="#B19EEF"
-                  speed="6s"
-                  thickness={2}
-                  className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer font-semibold shadow-lg transition-colors duration-300"
-                  title="Home"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
+            {/* Logo */}
+            <Link to="/" className="no-underline flex items-center gap-1.5 sm:gap-2 flex-shrink-0 group mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 group-hover:text-purple-300 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <span className="text-white font-extrabold text-base sm:text-lg tracking-tight group-hover:opacity-80 transition-opacity">Gobento</span>
+            </Link>
+
+            <div className="h-5 w-px flex-shrink-0" style={{ background: "rgba(255,255,255,0.15)" }} />
+
+            {/* Nav shortcuts */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Tooltip label="My Events" position="bottom">
+                <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                 </StarBorder>
-
-                {/* My Profile */}
-                <StarBorder
-                  onClick={() => navigate("/")}
-                  color="#FB923C"
-                  speed="6s"
-                  thickness={2}
-                  className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer font-semibold shadow-lg transition-colors duration-300"
-                  title="My Profile"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+              </Tooltip>
+              <Tooltip label="Feed" position="bottom">
+                <StarBorder onClick={() => navigate("/feed")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#FB923C" speed="6s" thickness={2}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                 </StarBorder>
-              </div>
+              </Tooltip>
+            </div>
 
-              {/* Center — profile info */}
-              <div className="flex items-center gap-2.5 flex-1 min-w-0 px-2">
-                {profile.picture ? (
-                  <img
-                    src={profile.picture}
-                    alt={profile.username || profile.name || profile.email}
-                    className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-500/60 flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ring-2 ring-purple-500/60 flex-shrink-0 text-sm">
-                    {(profile.username || profile.name || profile.email || "U").charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <h1 className="text-white font-bold text-base sm:text-lg truncate">
-                  {profile.username || profile.email}
-                </h1>
-              </div>
-
-              {/* Right — follow/unfollow + user menu */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {/* Follow / Unfollow */}
-                <StarBorder
-                  onClick={handleFollowToggle}
-                  disabled={isFollowLoading}
-                  color={isFollowing ? "#f87171" : "#B19EEF"}
-                  speed="6s"
-                  thickness={2}
-                  className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] star-border-container cursor-pointer font-semibold shadow-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  title={isFollowing ? "Unfollow" : "Follow"}
+            {/* Center — friend's profile info + unfollow dropdown */}
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              <div className="relative" ref={friendMenuRef}>
+                <button
+                  onClick={() => isFollowing && setShowFriendMenu((v) => !v)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors ${isFollowing ? "hover:bg-white/5 cursor-pointer" : "cursor-default"}`}
                 >
-                  {isFollowLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : isFollowing ? (
-                    <>
-                      {/* person-minus icon */}
+                  {profile.picture ? (
+                    <img src={profile.picture} alt={profile.username || ""} className="w-7 h-7 rounded-full object-cover ring-2 ring-purple-500/50 flex-shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-purple-500/40 flex-shrink-0">
+                      {(profile.username || profile.name || profile.email || "U").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-white font-semibold text-sm truncate max-w-[140px]">
+                    @{profile.username || profile.email}
+                  </span>
+                  {isFollowing && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 text-white/40 flex-shrink-0 transition-transform ${showFriendMenu ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+
+                {showFriendMenu && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-xl overflow-hidden z-50"
+                    style={{ background: "rgba(5,0,20,0.97)", border: "1px solid rgba(139,92,246,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", backdropFilter: "blur(16px)" }}
+                  >
+                    <button
+                      onClick={() => { setShowFriendMenu(false); setShowUnfollowConfirm(true); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors text-left"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
                       </svg>
-                      <span className="hidden sm:inline">Unfollow</span>
-                    </>
+                      Unfollow @{profile.username || profile.email}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Follow button when not following */}
+              {!isFollowing && (
+                <StarBorder
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  color="#B19EEF"
+                  speed="6s"
+                  thickness={2}
+                  className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] star-border-container cursor-pointer text-sm ml-2 disabled:opacity-50"
+                >
+                  {isFollowLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      {/* person-plus icon */}
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
-                      <span className="hidden sm:inline">Follow</span>
+                      <span>Follow</span>
                     </>
                   )}
                 </StarBorder>
-
-                {/* User own menu */}
-                <div className="flex-shrink-0">
-                  <Header token={token} API_URL={API_URL} userId={userId} showConnections={isFollowing} />
-                </div>
-              </div>
-
+              )}
             </div>
+
+            {/* Right — own user menu (same as homepage) */}
+            <div className="flex-shrink-0">
+              <Header
+                token={token}
+                API_URL={API_URL}
+                showConnections={false}
+                initialDisplayName={ownUsername || null}
+                avatarUrl={ownAvatarUrl}
+                onEditProfile={() => setShowEditProfile(true)}
+              />
+            </div>
+
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8 md:py-10 lg:py-12 flex-grow w-full">
+        <div aria-hidden="true" style={{ height: "var(--header-h, 64px)", flexShrink: 0 }} />
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-6 pb-10 flex-grow w-full">
           <ReadOnlyTodoList
             todos={events}
             search={search}
@@ -772,6 +859,46 @@ export default function UserProfile() {
           />
         </main>
       </div>
+
+      {/* Edit own profile */}
+      <UsernameModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        onSubmit={handleEditProfileSubmit}
+        isLoading={isUpdatingProfile}
+        canClose={true}
+        currentUsername={ownUsername || ""}
+        currentAvatarUrl={ownAvatarUrl || null}
+      />
+
+      {/* Unfollow confirmation */}
+      {showUnfollowConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}>
+          <div
+            className="relative w-full max-w-sm rounded-2xl p-6"
+            style={{ background: "rgba(5,0,20,0.97)", border: "1px solid rgba(139,92,246,0.3)", boxShadow: "0 24px 64px rgba(0,0,0,0.8)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-bold text-lg mb-2 text-center">Unfollow @{profile?.username || profile?.email}?</h2>
+            <p className="text-white/50 text-sm text-center mb-6">You'll no longer see their events in your feed.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUnfollowConfirm(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/70 hover:text-white hover:bg-white/10 transition-colors border border-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowUnfollowConfirm(false); executeFollowToggle(true); }}
+                disabled={isFollowLoading}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500/80 hover:bg-red-500 transition-colors disabled:opacity-50"
+              >
+                {isFollowLoading ? <span className="inline-block w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : "Unfollow"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Follow Confirmation Modal */}
       {showFollowModal && (

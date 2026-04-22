@@ -636,7 +636,7 @@ export default function HomePage() {
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 min-w-0 pb-8 px-2 sm:px-4 lg:px-5">
+          <main className="flex-1 min-w-0 pb-8">
             {isLoadingEvents ? (
               <div className="flex items-center justify-center py-24">
                 <div className="text-center space-y-4">

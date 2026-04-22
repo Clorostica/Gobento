@@ -59,6 +59,7 @@ export default function UserProfile() {
   const [showFriendMenu, setShowFriendMenu] = useState(false);
   const friendMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
 
   // Determinar si es el perfil del usuario actual
   const isOwnProfile = user?.sub === userId;
@@ -333,13 +334,16 @@ export default function UserProfile() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showFriendMenu]);
 
-  // --header-h CSS var
+  // --header-h CSS var + imperative spacer height (single-row header on this page)
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const update = () => {
-      const h = el.getBoundingClientRect().height;
-      if (h > 0) document.documentElement.style.setProperty("--header-h", `${h}px`);
+      const h = el.offsetHeight;
+      if (h > 0) {
+        document.documentElement.style.setProperty("--header-h", `${h}px`);
+        if (spacerRef.current) spacerRef.current.style.height = `${h}px`;
+      }
     };
     update();
     const obs = new ResizeObserver(update);
@@ -750,10 +754,10 @@ export default function UserProfile() {
               <span className="text-white font-extrabold text-base sm:text-lg tracking-tight group-hover:opacity-80 transition-opacity">Gobento</span>
             </Link>
 
-            <div className="h-5 w-px flex-shrink-0" style={{ background: "rgba(255,255,255,0.15)" }} />
+            <div className="hidden sm:block h-5 w-px flex-shrink-0" style={{ background: "rgba(255,255,255,0.15)" }} />
 
-            {/* Nav shortcuts */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Nav shortcuts — hidden on mobile to keep header clean */}
+            <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
               <Tooltip label="My Events" position="bottom">
                 <StarBorder onClick={() => navigate("/")} className="flex items-center justify-center px-2.5 py-2 min-h-[36px] star-border-container cursor-pointer" color="#B19EEF" speed="6s" thickness={2}>
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
@@ -859,9 +863,9 @@ export default function UserProfile() {
           </div>
         </header>
 
-        <div aria-hidden="true" style={{ height: "var(--header-h, 64px)", flexShrink: 0 }} />
+        <div ref={spacerRef} aria-hidden="true" style={{ height: "65px", flexShrink: 0 }} />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-6 pb-10 flex-grow w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-4 pb-10 flex-grow w-full">
           <ReadOnlyTodoList
             todos={events}
             search={search}

@@ -189,8 +189,9 @@ function DateSwitch({
 export default function SharedTaskPage() {
   const { loginWithRedirect, user: authUser, isAuthenticated: isLoggedIn } = useAuth0();
   const { token: authToken } = useAuth();
-  const cachedUsername = localStorage.getItem("gobento_username");
   const { token } = useParams<{ token: string }>();
+  const [ownUsername, setOwnUsername] = useState<string | null>(() => localStorage.getItem("gobento_username"));
+  const [ownAvatarUrl, setOwnAvatarUrl] = useState<string | null>(null);
   const [task, setTask] = useState<SharedTask | null>(null);
   const [votes, setVotes] = useState<VoteCounts | null>(null);
   const [selected, setSelected] = useState<1 | 2 | null>(null);
@@ -206,6 +207,24 @@ export default function SharedTaskPage() {
   const [commentError, setCommentError] = useState("");
   const [showCommentEmoji, setShowCommentEmoji] = useState(false);
   const commentInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch own profile for updated username + avatar in header
+  useEffect(() => {
+    if (!authToken) return;
+    fetch(`${env.API_URL}/users`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        if (data.username) {
+          setOwnUsername(data.username);
+          localStorage.setItem("gobento_username", data.username);
+        }
+        setOwnAvatarUrl(data.avatar_url || data.avatarUrl || null);
+      })
+      .catch(() => {});
+  }, [authToken]);
 
   useEffect(() => {
     if (!token) return;
@@ -313,7 +332,8 @@ export default function SharedTaskPage() {
               token={authToken}
               API_URL={env.API_URL}
               showConnections={false}
-              initialDisplayName={cachedUsername || null}
+              initialDisplayName={ownUsername}
+              avatarUrl={ownAvatarUrl}
             />
           </div>
         </div>

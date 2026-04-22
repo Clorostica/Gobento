@@ -580,7 +580,7 @@ export default function HomePage() {
         {/* Spacer — ResizeObserver keeps --header-h in sync with the full header height (now includes filter row) */}
         <div
           aria-hidden="true"
-          style={{ height: "var(--header-h, 150px)", flexShrink: 0 }}
+          style={{ height: "var(--header-h, 165px)", flexShrink: 0 }}
         />
 
         {/* ── Body: sidebar (lg+) + content ───────────────────────────── */}
@@ -651,7 +651,7 @@ export default function HomePage() {
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 min-w-0 pb-8">
+          <main className="flex-1 min-w-0 pb-8 pt-3 lg:pt-0">
             {isLoadingEvents ? (
               <div className="flex items-center justify-center py-24">
                 <div className="text-center space-y-4">

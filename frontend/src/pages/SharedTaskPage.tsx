@@ -165,7 +165,7 @@ function DateSwitch({
                 key={opt}
                 onClick={() => !locked && !isVoting && onSelect(opt)}
                 disabled={isVoting}
-                className="relative z-10 flex-1 py-4 px-3 rounded-xl text-center transition-colors duration-200 disabled:cursor-not-allowed"
+                className="relative z-10 flex-1 py-3 px-3 rounded-xl text-center transition-colors duration-200 disabled:cursor-not-allowed"
                 style={{ cursor: locked ? "default" : "pointer" }}
               >
                 <div className={`text-[10px] uppercase tracking-[0.18em] font-semibold mb-1 transition-colors duration-200 ${selected === opt ? "text-violet-200" : "text-white/30"}`}>{d.weekday}</div>
@@ -382,7 +382,7 @@ export default function SharedTaskPage() {
               )}
 
               {/* Right column: everything */}
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 flex flex-col">
 
                 {/* Event info */}
                 <div className="px-6 pt-6 pb-5 border-b border-white/[0.06]">
@@ -421,7 +421,7 @@ export default function SharedTaskPage() {
 
                 {/* Poll */}
                 {(task.dateOption1 || task.dateOption2) && (
-                  <div className="px-6 py-5 border-b border-white/[0.06] fade-up-2">
+                  <div className="px-4 sm:px-6 py-5 border-b border-white/[0.06] fade-up-2">
                     {isOwner ? (
                       /* Owner: read-only results */
                       <div className="space-y-3">
@@ -459,13 +459,15 @@ export default function SharedTaskPage() {
                       <>
                         <p className="text-white font-bold text-base mb-1">When works for you?</p>
                         <p className="text-white/30 text-xs mb-4">Tap a date — your vote is final</p>
-                        <DateSwitch
-                          date1={task.dateOption1 ?? ""}
-                          date2={task.dateOption2 ?? ""}
-                          selected={selected}
-                          onSelect={handleSelect}
-                          isVoting={isVoting}
-                        />
+                        <div className="max-w-xs mx-auto sm:max-w-full">
+                          <DateSwitch
+                            date1={task.dateOption1 ?? ""}
+                            date2={task.dateOption2 ?? ""}
+                            selected={selected}
+                            onSelect={handleSelect}
+                            isVoting={isVoting}
+                          />
+                        </div>
                         {error && <p className="text-red-400 text-xs text-center mt-3">{error}</p>}
                       </>
                     ) : (

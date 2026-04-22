@@ -45,7 +45,6 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState<string>("");
-  const [searchType, setSearchType] = useState<"events" | "users">("events");
   const [filter, setFilter] = useState<
     | "all"
     | "planned"
@@ -61,7 +60,7 @@ export default function HomePage() {
     localStorage.getItem("gobento_username"),
   );
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [searchUsers, setSearchUsers] = useState<Profile[]>([]);
+  const [searchUsers, setSearchUsers] = useState<{ id: string; username: string; avatarUrl: string | null }[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
@@ -209,49 +208,41 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (searchType !== "users" || !token) {
+    if (!search.trim() || !token) {
       setSearchUsers([]);
       setIsSearchingUsers(false);
       return;
     }
 
-    const searchUsersDebounced = async () => {
-      setIsSearchingUsers(true);
+    setIsSearchingUsers(true);
+    const timeoutId = setTimeout(async () => {
       try {
-        const queryParam = search.trim()
-          ? `?q=${encodeURIComponent(search.trim())}`
-          : "?q=";
         const response = await fetch(
-          `${env.API_URL}/users/search${queryParam}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          `${env.API_URL}/users/search?q=${encodeURIComponent(search.trim())}`,
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-
         if (response.ok) {
           const data = await response.json();
-          const users = (data.users || [])
-            .filter((u: any) => u.id !== user?.sub && u.username)
-            .map((u: any) => ({
-              id: u.id,
-              username: u.username as string,
-              avatarUrl: u.avatar_url || u.avatarUrl || null,
-            }));
-          setSearchUsers(users);
+          setSearchUsers(
+            (data.users || [])
+              .filter((u: any) => u.id !== user?.sub && u.username)
+              .map((u: any) => ({
+                id: u.id,
+                username: u.username as string,
+                avatarUrl: u.avatar_url || u.avatarUrl || null,
+              }))
+          );
         } else {
           setSearchUsers([]);
         }
-      } catch (error) {
-        console.error("Error searching users:", error);
+      } catch {
         setSearchUsers([]);
       } finally {
         setIsSearchingUsers(false);
       }
-    };
-
-    const timeoutId = setTimeout(searchUsersDebounced, search.trim() ? 300 : 0);
+    }, 250);
     return () => clearTimeout(timeoutId);
-  }, [search, searchType, token, env.API_URL, user?.sub]);
+  }, [search, token, env.API_URL, user?.sub]);
 
   useEffect(() => {
     if (events.length === 0) return;
@@ -433,6 +424,19 @@ export default function HomePage() {
     [isAuthenticated, token, eventsService],
   );
 
+  // Events matching the current search query for the dropdown
+  const searchEventResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return events
+      .filter((e) =>
+        (e.title && e.title.toLowerCase().includes(q)) ||
+        (e.text && e.text.toLowerCase().includes(q))
+      )
+      .slice(0, 5)
+      .map((e) => ({ id: e.id, title: e.title ?? null, text: e.text ?? null, status: e.status }));
+  }, [search, events]);
+
   if (isLoading) {
     return (
       <div
@@ -523,7 +527,15 @@ export default function HomePage() {
 
             {/* Search — expands to fill center */}
             <div className="flex-1 min-w-0 hidden sm:block">
-              <Search search={search} setSearch={setSearch} />
+              <Search
+                search={search}
+                setSearch={setSearch}
+                userResults={searchUsers}
+                eventResults={searchEventResults}
+                onSelectUser={(id) => navigate(`/user/${id}`)}
+                onSelectEvent={() => { /* event stays visible in list below */ }}
+                isLoadingUsers={isSearchingUsers}
+              />
             </div>
             <div className="flex-1 sm:hidden" />
 
@@ -540,7 +552,15 @@ export default function HomePage() {
           </div>
           {/* Search — mobile only second row */}
           <div className="sm:hidden px-3 pb-2.5">
-            <Search search={search} setSearch={setSearch} />
+            <Search
+              search={search}
+              setSearch={setSearch}
+              userResults={searchUsers}
+              eventResults={searchEventResults}
+              onSelectUser={(id) => navigate(`/user/${id}`)}
+              onSelectEvent={() => { /* event stays visible in list below */ }}
+              isLoadingUsers={isSearchingUsers}
+            />
           </div>
         </header>
         {/* Spacer — 110px fallback covers mobile 2-row header; ResizeObserver updates --header-h to exact value */}

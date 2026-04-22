@@ -551,7 +551,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Search — mobile only second row */}
-          <div className="sm:hidden px-3 pb-2.5">
+          <div className="sm:hidden px-3 pb-2">
             <Search
               search={search}
               setSearch={setSearch}
@@ -562,19 +562,9 @@ export default function HomePage() {
               isLoadingUsers={isSearchingUsers}
             />
           </div>
-        </header>
-        {/* Spacer — 110px fallback covers mobile 2-row header; ResizeObserver updates --header-h to exact value */}
-        <div
-          aria-hidden="true"
-          style={{ height: "var(--header-h, 110px)", flexShrink: 0 }}
-        />
 
-        {/* ── Mobile/tablet sticky filter bar (hidden on lg+) ─────────── */}
-        <div
-          className="lg:hidden sticky z-40 w-full backdrop-blur-md border-b border-t"
-          style={{ top: "var(--header-h, 110px)", background: "rgba(0,0,0,0.85)", borderColor: "rgba(139,92,246,0.15)" }}
-        >
-          <div className="px-3 py-2.5">
+          {/* Category filter — mobile/tablet only (lg+ uses sidebar), lives inside header so --header-h covers it */}
+          <div className="lg:hidden border-t px-3 py-2" style={{ borderColor: "rgba(139,92,246,0.15)" }}>
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
               <EventFilter
                 filter={filter}
@@ -586,7 +576,12 @@ export default function HomePage() {
               />
             </div>
           </div>
-        </div>
+        </header>
+        {/* Spacer — ResizeObserver keeps --header-h in sync with the full header height (now includes filter row) */}
+        <div
+          aria-hidden="true"
+          style={{ height: "var(--header-h, 150px)", flexShrink: 0 }}
+        />
 
         {/* ── Body: sidebar (lg+) + content ───────────────────────────── */}
         <div className="flex flex-1 min-h-0">

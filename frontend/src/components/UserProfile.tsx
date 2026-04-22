@@ -74,15 +74,16 @@ export default function UserProfile() {
       const idToken = tokenClaims.__raw;
       setToken(idToken);
 
-      // Fetch own profile for header display
+      // Fetch own profile for header display (GET /users returns the authenticated user)
       try {
-        const meRes = await fetch(`${API_URL}/users/me`, {
+        const meRes = await fetch(`${API_URL}/users`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         if (meRes.ok) {
           const meData = await meRes.json();
           setOwnUsername(meData.username || null);
           setOwnAvatarUrl(meData.avatar_url || meData.avatarUrl || null);
+          if (meData.username) localStorage.setItem("gobento_username", meData.username);
         }
       } catch { /* silent */ }
 
@@ -362,8 +363,8 @@ export default function UserProfile() {
     if (!token) return;
     setIsUpdatingProfile(true);
     try {
-      const res = await fetch(`${API_URL}/users/me`, {
-        method: "PATCH",
+      const res = await fetch(`${API_URL}/users`, {
+        method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ username, avatarUrl: avatarUrl ?? undefined }),
       });

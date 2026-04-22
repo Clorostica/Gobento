@@ -119,10 +119,22 @@ export default function FeedPage() {
   const loadProfile = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${env.API_URL}/users/me`, {
+      const res = await fetch(`${env.API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setProfile(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setProfile({
+          id: data.id,
+          email: data.email,
+          username: data.username ?? null,
+          avatarUrl: data.avatar_url || data.avatarUrl || null,
+        });
+        if (data.username) {
+          localStorage.setItem("gobento_username", data.username);
+          setCachedUsername(data.username);
+        }
+      }
     } catch { /* silent */ }
   }, [token]);
 

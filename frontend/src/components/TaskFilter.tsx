@@ -97,21 +97,19 @@ export default function EventFilter({ filter, setFilter, onAddEvent }: EventFilt
         const isActive = filter === f.value;
         return (
           <React.Fragment key={f.value}>
-            {/* Mobile: icon-only with native title tooltip */}
-            <span className="sm:hidden flex-shrink-0">
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setFilter(f.value)}
-                title={f.tooltip}
-                aria-label={f.label}
-                className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ease-out ${
-                  isActive ? "text-white" : "text-white/50 active:text-white/80"
-                }`}
-                style={isActive ? { background: f.gradient, boxShadow: `0 2px 12px ${f.glow}` } : undefined}
-              >
-                <span className="text-xl leading-none">{f.icon}</span>
-              </button>
-            </span>
+            {/* Mobile: flex-1 so all buttons share the row equally */}
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setFilter(f.value)}
+              title={f.tooltip}
+              aria-label={f.label}
+              className={`sm:hidden flex-1 flex items-center justify-center py-2 rounded-xl transition-all duration-200 ease-out ${
+                isActive ? "text-white" : "text-white/50 active:text-white/80"
+              }`}
+              style={isActive ? { background: f.gradient, boxShadow: `0 2px 12px ${f.glow}` } : undefined}
+            >
+              <span className="text-lg leading-none">{f.icon}</span>
+            </button>
 
             {/* Desktop: Tooltip + label */}
             <Tooltip label={f.tooltip} position="bottom" className="hidden sm:inline-flex flex-shrink-0">
@@ -131,15 +129,15 @@ export default function EventFilter({ filter, setFilter, onAddEvent }: EventFilt
         );
       })}
 
-      {/* Add event — icon-only on mobile, icon+label on sm+ */}
+      {/* Add event — flex-1 on mobile, icon+label on sm+ */}
       {onAddEvent && (
         <>
-          {/* Mobile: icon-only, solid purple */}
+          {/* Mobile: flex-1, solid purple */}
           <button
             onClick={onAddEvent}
             title="Add new event"
             aria-label="Add new event"
-            className="sm:hidden flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-white transition-all active:scale-95 ml-1"
+            className="sm:hidden flex-1 flex items-center justify-center py-2 rounded-xl text-white transition-all active:scale-95"
             style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", boxShadow: "0 3px 14px rgba(139,92,246,0.5)" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -147,7 +145,7 @@ export default function EventFilter({ filter, setFilter, onAddEvent }: EventFilt
             </svg>
           </button>
 
-          {/* Desktop (sm): icon + label, solid purple — only shown in the mobile/tablet filter strip (sm range) */}
+          {/* Desktop (sm): icon + label, solid purple */}
           <Tooltip label="Add new event" position="bottom" className="hidden sm:inline-flex flex-shrink-0 ml-1">
             <button
               onClick={onAddEvent}

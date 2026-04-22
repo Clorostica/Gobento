@@ -5,7 +5,12 @@
 @tailwind utilities;
 
 :root {
-  --header-h: 72px; /* safe default; updated by JS ResizeObserver */
+  --header-h: 130px; /* mobile/tablet default: logo row + search row + filter row */
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 65px; /* desktop default: single row (filter is in sidebar) */
+  }
 }
 
 html,

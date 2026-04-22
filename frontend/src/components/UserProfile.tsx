@@ -865,7 +865,7 @@ export default function UserProfile() {
 
         <div ref={spacerRef} aria-hidden="true" style={{ height: "65px", flexShrink: 0 }} />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-4 pb-10 flex-grow w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-3 pb-10 flex-grow w-full">
           <ReadOnlyTodoList
             todos={events}
             search={search}

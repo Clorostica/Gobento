@@ -5,11 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --header-h: 130px; /* mobile/tablet default: logo row + search row + filter row */
+  --header-h: 160px; /* mobile default: logo row (~56px) + search row (~46px) + filter row (~50px) + buffer */
+}
+@media (min-width: 640px) {
+  :root {
+    --header-h: 140px; /* tablet: no mobile search row, but still has filter row */
+  }
 }
 @media (min-width: 1024px) {
   :root {
-    --header-h: 65px; /* desktop default: single row (filter is in sidebar) */
+    --header-h: 65px; /* desktop: single row only, filter is in sidebar */
   }
 }
 

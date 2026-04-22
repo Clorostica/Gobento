@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Login from "./Login";
 import Logout from "./Logout";
 import FollowersFollowingPanel from "./FollowersFollowingPanel";
@@ -31,6 +31,19 @@ const Header = ({
   const [isFollowersFollowingPanelOpen, setIsFollowersFollowingPanelOpen] =
     useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const connectionsRef = useRef<HTMLDivElement>(null);
+
+  // Close connections panel on outside click
+  useEffect(() => {
+    if (!isFollowersFollowingPanelOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (connectionsRef.current && !connectionsRef.current.contains(e.target as Node)) {
+        setIsFollowersFollowingPanelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isFollowersFollowingPanelOpen]);
 
   const displayName = isAuthenticated
     ? (initialDisplayName || "")
@@ -49,10 +62,10 @@ const Header = ({
 
             {/* Connections — hidden on mobile, shown sm+ */}
             {showConnections && (
-              <span className="hidden sm:inline-flex">
+              <div ref={connectionsRef} className="relative hidden sm:block">
                 <Tooltip label="Connections">
                   <StarBorder
-                    onClick={() => setIsFollowersFollowingPanelOpen(true)}
+                    onClick={() => setIsFollowersFollowingPanelOpen((v) => !v)}
                     className={iconBtn}
                     color="#B19EEF"
                     speed="6s"
@@ -63,7 +76,14 @@ const Header = ({
                     </svg>
                   </StarBorder>
                 </Tooltip>
-              </span>
+                <FollowersFollowingPanel
+                  isOpen={isFollowersFollowingPanelOpen}
+                  onClose={() => setIsFollowersFollowingPanelOpen(false)}
+                  token={token}
+                  API_URL={API_URL}
+                  userId={userId}
+                />
+              </div>
             )}
 
             {/* User avatar button — toggles dropdown */}
@@ -125,15 +145,6 @@ const Header = ({
         )}
       </div>
 
-      {isAuthenticated && (
-        <FollowersFollowingPanel
-          isOpen={isFollowersFollowingPanelOpen}
-          onClose={() => setIsFollowersFollowingPanelOpen(false)}
-          token={token}
-          API_URL={API_URL}
-          userId={userId}
-        />
-      )}
     </>
   );
 };

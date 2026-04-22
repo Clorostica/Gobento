@@ -579,11 +579,11 @@ export default function HomePage() {
             </div>
           </div>
         </header>
-        {/* Spacer — height set imperatively via spacerRef + CSS var fallback of 180px */}
+        {/* Spacer — height set imperatively via spacerRef; starts at 65px (desktop default) and is updated to exact header height before paint */}
         <div
           ref={spacerRef}
           aria-hidden="true"
-          style={{ height: "180px", flexShrink: 0 }}
+          style={{ height: "65px", flexShrink: 0 }}
         />
 
         {/* ── Body: sidebar (lg+) + content ───────────────────────────── */}

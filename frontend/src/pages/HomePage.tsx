@@ -66,6 +66,7 @@ export default function HomePage() {
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [isNewlyCreatedUser, setIsNewlyCreatedUser] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
 
   const eventsService = useMemo(
     () => new EventsService(apiClient),
@@ -189,16 +190,17 @@ export default function HomePage() {
     requestNotificationPermission();
   }, []);
 
-  // Keep --header-h CSS variable in sync with real header height
+  // Keep --header-h CSS variable AND spacer height in sync with real header height
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const update = () => {
-      if (el.offsetHeight > 0) {
-        document.documentElement.style.setProperty(
-          "--header-h",
-          `${el.offsetHeight}px`,
-        );
+      const h = el.offsetHeight;
+      if (h > 0) {
+        document.documentElement.style.setProperty("--header-h", `${h}px`);
+        if (spacerRef.current) {
+          spacerRef.current.style.height = `${h}px`;
+        }
       }
     };
     update();
@@ -577,10 +579,11 @@ export default function HomePage() {
             </div>
           </div>
         </header>
-        {/* Spacer — ResizeObserver keeps --header-h in sync with the full header height (now includes filter row) */}
+        {/* Spacer — height set imperatively via spacerRef + CSS var fallback of 180px */}
         <div
+          ref={spacerRef}
           aria-hidden="true"
-          style={{ height: "var(--header-h, 165px)", flexShrink: 0 }}
+          style={{ height: "180px", flexShrink: 0 }}
         />
 
         {/* ── Body: sidebar (lg+) + content ───────────────────────────── */}

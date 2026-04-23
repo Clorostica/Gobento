@@ -5,6 +5,7 @@ import FeedPage from "./pages/FeedPage";
 import UserProfile from "./components/UserProfile";
 import SharedTaskPage from "./pages/SharedTaskPage";
 import Aurora from "./components/Aurora";
+import Footer from "./components/Footer";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
               <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/share/:token" element={<SharedTaskPage />} />
             </Routes>
+            <Footer />
           </BrowserRouter>
         </div>
       </div>
